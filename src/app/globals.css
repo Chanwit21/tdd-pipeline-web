@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #eef1f7;
+  --surface: #ffffff;
+  --surface-2: #f7f8fc;
+  --border: #e3e7f0;
+  --text: #161c2c;
+  --text-muted: #6c7486;
+  --sidebar: #0f1830;
+  --accent: #ff7a1f;
+  --accent-ink: #c2560c;
+  --accent-weak: #fff0e2;
+  --success: #178a4c;
+  --success-weak: #e5f7ec;
+  --warning: #b26a00;
+  --warning-weak: #fff2df;
+  --danger: #c8321f;
+  --danger-weak: #fdeae7;
+  --info: #2058c9;
+  --info-weak: #e9f0ff;
+  --slate: #5b6577;
+  --slate-weak: #eef0f5;
+  --text-faint: #9aa1b3;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-noto-thai), var(--font-jakarta), system-ui, sans-serif;
+}
+
+.num {
+  font-family: var(--font-jakarta), var(--font-noto-thai), sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* row tints for the pipeline table (spec §8) */
+.row-success > td {
+  background: #e5f7ec66 !important;
+}
+.row-slate > td {
+  background: #eef0f566 !important;
+}
+.row-danger > td {
+  background: #fdeae766 !important;
+}
