@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Select } from "antd";
 import { ReportShell } from "@/components/report/ReportShell";
+import { FilterField } from "@/components/FilterPanel";
 import { useMasterConfig } from "@/lib/hooks";
 
 const STATUS = ["Follow Up", "PR", "Inactive"].map((s) => ({ value: s, label: s }));
@@ -15,7 +16,7 @@ export default function PipelineByTeamReport() {
 
   return (
     <ReportShell
-      title="Report: Pipeline by Team"
+      title="Report — Pipeline by Team"
       description="Sum of Amount · แถว = แผนก · คอลัมน์ = เดือน Closed Date"
       endpoint="/api/reports/pipeline-by-team"
       extraQuery={{
@@ -25,33 +26,39 @@ export default function PipelineByTeamReport() {
       }}
       extraFilters={
         <>
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="Deal Status"
-            style={{ minWidth: 160 }}
-            value={status}
-            onChange={setStatus}
-            options={STATUS}
-          />
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="Probability"
-            style={{ minWidth: 160 }}
-            value={prob}
-            onChange={setProb}
-            options={config?.probabilities.map((p) => ({ value: p.probability, label: p.probability }))}
-          />
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="Deal Stage"
-            style={{ minWidth: 180 }}
-            value={stage}
-            onChange={setStage}
-            options={config?.dealStages.map((s) => ({ value: s.name, label: s.name }))}
-          />
+          <FilterField label="Deal Status">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="ทั้งหมด"
+              style={{ minWidth: 150 }}
+              value={status}
+              onChange={setStatus}
+              options={STATUS}
+            />
+          </FilterField>
+          <FilterField label="Probability">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="ทั้งหมด"
+              style={{ minWidth: 150 }}
+              value={prob}
+              onChange={setProb}
+              options={config?.probabilities.map((p) => ({ value: p.probability, label: p.probability }))}
+            />
+          </FilterField>
+          <FilterField label="Deal Stage">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="ทั้งหมด"
+              style={{ minWidth: 170 }}
+              value={stage}
+              onChange={setStage}
+              options={config?.dealStages.map((s) => ({ value: s.name, label: s.name }))}
+            />
+          </FilterField>
         </>
       }
     />

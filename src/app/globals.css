@@ -12,11 +12,18 @@
   --sidebar: #0f1830;
   --accent: #ff7a1f;
   --accent-ink: #c2560c;
+  --accent-weak: #fff0e2;
   --success: #178a4c;
+  --success-weak: #e5f7ec;
   --warning: #b26a00;
+  --warning-weak: #fff2df;
   --danger: #c8321f;
+  --danger-weak: #fdeae7;
   --info: #2058c9;
+  --info-weak: #e9f0ff;
   --slate: #5b6577;
+  --slate-weak: #eef0f5;
+  --text-faint: #9aa1b3;
 }
 
 html,

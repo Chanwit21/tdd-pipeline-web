@@ -2,12 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Row, Col, Card, Statistic, Select, DatePicker, Table, Typography, Tag, Space, Button } from "antd";
+import { Row, Col, Card, Select, DatePicker, Table, Tag, Space, Button } from "antd";
+import {
+  DollarOutlined,
+  CheckCircleOutlined,
+  TrophyOutlined,
+  WarningOutlined,
+} from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMasterConfig } from "@/lib/hooks";
 import { formatAmount, formatMonth } from "@/lib/format";
+import { PageHeader } from "@/components/PageHeader";
+import { FilterPanel, FilterField } from "@/components/FilterPanel";
+import { KpiCard } from "@/components/KpiCard";
 
 interface Summary {
   statCards: {
@@ -53,19 +62,18 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [departmentId, range, isAdmin]);
 
+  const s = data?.statCards;
+
   return (
-    <Space direction="vertical" size="large" style={{ width: "100%" }}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Dashboard
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            ภาพรวม pipeline {isAdmin ? "— ทุกแผนก" : `— แผนก ${user?.departmentCode}`}
-          </Typography.Text>
-        </div>
-        <Space wrap>
-          {isAdmin && (
+    <Space direction="vertical" size={18} style={{ width: "100%" }}>
+      <PageHeader
+        title="Dashboard"
+        subtitle={`ภาพรวม pipeline ${isAdmin ? "— ทุกแผนก" : `— แผนก ${user?.departmentCode}`}`}
+      />
+
+      <FilterPanel>
+        {isAdmin && (
+          <FilterField label="แผนก">
             <Select
               allowClear
               placeholder="ทุกแผนก"
@@ -74,21 +82,56 @@ export default function DashboardPage() {
               onChange={setDepartmentId}
               options={config?.departments.map((d) => ({ value: d.id, label: `${d.code} — ${d.name}` }))}
             />
-          )}
+          </FilterField>
+        )}
+        <FilterField label="ช่วงเดือน (Closed Date)">
           <DatePicker.RangePicker
             picker="month"
             value={range}
             allowClear={false}
             onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])}
           />
-        </Space>
-      </div>
+        </FilterField>
+      </FilterPanel>
 
-      <Row gutter={[16, 16]}>
-        <StatCol label="Total Pipeline Amount" value={data?.statCards.totalPipelineAmount} hint="deal ที่ยัง active" />
-        <StatCol label="Best Case Amount" value={data?.statCards.bestCaseAmount} hint="Situation = Best Case" />
-        <StatCol label="Won / PO Amount" value={data?.statCards.wonAmount} hint="ตามช่วงเดือนที่เลือก" />
-        <StatCol label="จำนวน Deal (active)" value={data?.statCards.activeDealCount} hint="ไม่รวม Inactive" plain />
+      <Row gutter={[14, 14]}>
+        <Col xs={24} sm={12} xl={6}>
+          <KpiCard
+            label="Total Pipeline Amount"
+            value={formatAmount(s?.totalPipelineAmount)}
+            icon={<DollarOutlined />}
+            tone="info"
+            sub={`รวม ${s?.activeDealCount ?? 0} ดีล ที่ยัง Active`}
+          />
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <KpiCard
+            label="Best Case Amount"
+            value={formatAmount(s?.bestCaseAmount)}
+            icon={<CheckCircleOutlined />}
+            tone="success"
+            sub="Probability 75% ขึ้นไป"
+            subStrong
+          />
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <KpiCard
+            label="Won / PO Amount"
+            value={formatAmount(s?.wonAmount)}
+            icon={<TrophyOutlined />}
+            tone="accent"
+            sub="ตามช่วงเดือนที่เลือก"
+          />
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <KpiCard
+            label="Overdue Follow Up"
+            value={String(data?.overdue.length ?? 0)}
+            icon={<WarningOutlined />}
+            tone="danger"
+            sub={data && data.overdue.length > 0 ? "ต้องติดตามด่วน" : "ไม่มีรายการค้าง"}
+          />
+        </Col>
       </Row>
 
       {isAdmin && data?.byDepartment && (
@@ -122,7 +165,7 @@ export default function DashboardPage() {
       <Card
         title="Overdue List"
         size="small"
-        extra={<Tag color="error">{data?.overdue.length ?? 0} รายการ</Tag>}
+        extra={<Tag color="error" bordered={false}>{data?.overdue.length ?? 0} รายการ</Tag>}
       >
         <Table
           size="small"
@@ -136,12 +179,7 @@ export default function DashboardPage() {
             { title: "Deal Name", dataIndex: "dealName", ellipsis: true },
             { title: "แผนก", dataIndex: "department", width: 90 },
             { title: "Deal Owner", dataIndex: "dealOwner", width: 120 },
-            {
-              title: "Closed Date",
-              dataIndex: "closedDate",
-              width: 110,
-              render: (v) => formatMonth(v),
-            },
+            { title: "Closed Date", dataIndex: "closedDate", width: 110, render: (v) => formatMonth(v) },
             {
               title: "Amount",
               dataIndex: "amount",
@@ -162,33 +200,5 @@ export default function DashboardPage() {
         />
       </Card>
     </Space>
-  );
-}
-
-function StatCol({
-  label,
-  value,
-  hint,
-  plain,
-}: {
-  label: string;
-  value: number | undefined;
-  hint: string;
-  plain?: boolean;
-}) {
-  return (
-    <Col xs={24} sm={12} xl={6}>
-      <Card size="small">
-        <Statistic
-          title={label}
-          value={value ?? 0}
-          formatter={plain ? undefined : (v) => formatAmount(Number(v))}
-          valueStyle={{ fontFamily: "var(--font-jakarta)" }}
-        />
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {hint}
-        </Typography.Text>
-      </Card>
-    </Col>
   );
 }

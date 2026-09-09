@@ -2,19 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Table,
-  Input,
-  Select,
-  DatePicker,
-  Checkbox,
-  Button,
-  Space,
-  Card,
-  Typography,
-  Tag,
-} from "antd";
+import { Table, Input, Select, DatePicker, Checkbox, Button, Space, Tag } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import { PageHeader } from "@/components/PageHeader";
+import { FilterPanel, FilterField } from "@/components/FilterPanel";
 import type { ColumnsType } from "antd/es/table";
 import dayjs, { Dayjs } from "dayjs";
 import { api } from "@/lib/api";
@@ -105,25 +96,22 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   ];
 
   return (
-    <Space direction="vertical" size="large" style={{ width: "100%" }}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Sales Pipeline
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            {data ? `${data.totalElements} deal` : "…"}
-            {user?.departmentCode ? ` · แผนก ${user.departmentCode}` : ""}
-          </Typography.Text>
-        </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setTarget("new")}>
-          เพิ่ม Deal
-        </Button>
-      </div>
+    <Space direction="vertical" size={18} style={{ width: "100%" }}>
+      <PageHeader
+        title="Sales Pipeline"
+        subtitle={`${data ? data.totalElements : "…"} deal${
+          user?.departmentCode ? ` · แผนก ${user.departmentCode}` : ""
+        }`}
+        actions={
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setTarget("new")}>
+            เพิ่ม Deal
+          </Button>
+        }
+      />
 
-      <Card size="small">
-        <Space wrap size="middle">
-          {isAdmin && (
+      <FilterPanel>
+        {isAdmin && (
+          <FilterField label="แผนก">
             <Select
               allowClear
               placeholder="ทุกแผนก"
@@ -135,11 +123,13 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
               }}
               options={config?.departments.map((d) => ({ value: d.id, label: d.code }))}
             />
-          )}
+          </FilterField>
+        )}
+        <FilterField label="Deal Status">
           <Select
             mode="multiple"
             allowClear
-            placeholder="Deal Status"
+            placeholder="ทั้งหมด"
             style={{ minWidth: 200 }}
             value={statuses}
             onChange={(v) => {
@@ -148,18 +138,22 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
             }}
             options={STATUS_OPTIONS}
           />
+        </FilterField>
+        <FilterField label="ช่วง Closed Date">
           <DatePicker.RangePicker
             picker="month"
-            placeholder={["Closed จาก", "ถึง"]}
+            placeholder={["จาก", "ถึง"]}
             value={closed}
             onChange={(v) => {
               setPage(1);
               setClosed(v ?? [null, null]);
             }}
           />
+        </FilterField>
+        <FilterField label="ค้นหา">
           <Input.Search
             allowClear
-            placeholder="ค้นหา Customer / Deal Name"
+            placeholder="Customer / Deal Name"
             style={{ width: 240 }}
             value={search}
             onChange={(e) => {
@@ -167,11 +161,15 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
               setSearch(e.target.value);
             }}
           />
-          <Checkbox checked={overdueOnly} onChange={(e) => setOverdueOnly(e.target.checked)}>
-            เฉพาะ Overdue
-          </Checkbox>
-        </Space>
-      </Card>
+        </FilterField>
+        <Checkbox
+          style={{ paddingBottom: 6 }}
+          checked={overdueOnly}
+          onChange={(e) => setOverdueOnly(e.target.checked)}
+        >
+          เฉพาะ Overdue
+        </Checkbox>
+      </FilterPanel>
 
       <Table<Deal>
         rowKey="id"

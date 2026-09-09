@@ -1,20 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Switch,
-  Tag,
-  Space,
-  Typography,
-  Popconfirm,
-} from "antd";
+import { Table, Button, Modal, Form, Input, Select, Switch, Tag, Space, Popconfirm } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import { PageHeader } from "@/components/PageHeader";
 import { api, ApiError } from "@/lib/api";
 import { useMasterConfig } from "@/lib/hooks";
 import { useToast } from "@/lib/toast";
@@ -110,18 +99,16 @@ export default function UserManagementPage() {
   }
 
   return (
-    <Space direction="vertical" size="large" style={{ width: "100%" }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            จัดการผู้ใช้งาน
-          </Typography.Title>
-          <Typography.Text type="secondary">1 Manager ต่อ 1 แผนก · Admin ไม่ผูกแผนก</Typography.Text>
-        </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
-          เพิ่มผู้ใช้
-        </Button>
-      </div>
+    <Space direction="vertical" size={18} style={{ width: "100%" }}>
+      <PageHeader
+        title="User Management"
+        subtitle="1 Manager ต่อ 1 แผนก · Admin ไม่ผูกแผนก"
+        actions={
+          <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
+            เพิ่มผู้ใช้
+          </Button>
+        }
+      />
 
       <Table<AdminUser>
         rowKey="id"

@@ -5,6 +5,7 @@ import { Card, Table, Alert, Select, Button, Space, Typography, Spin } from "ant
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import { invalidateMasterConfig } from "@/lib/hooks";
+import { PageHeader } from "@/components/PageHeader";
 import type { MasterConfig } from "@/lib/types";
 
 export default function MasterConfigPage() {
@@ -46,15 +47,11 @@ export default function MasterConfigPage() {
   const probOptions = config.probabilities.map((p) => ({ value: p.probability, label: p.probability }));
 
   return (
-    <Space direction="vertical" size="large" style={{ width: "100%" }}>
-      <div>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Master Config
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          แก้ dropdown list และกฎ cascade ที่เคยอยู่ในชีต Master_Config
-        </Typography.Text>
-      </div>
+    <Space direction="vertical" size={18} style={{ width: "100%" }}>
+      <PageHeader
+        title="Master Data"
+        subtitle="แก้ dropdown list และกฎ cascade ที่เคยอยู่ในชีต Master_Config"
+      />
 
       <Alert
         type="warning"

@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Select, Button, Space, Typography } from "antd";
+import { Select, Button, Space } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMasterConfig } from "@/lib/hooks";
+import { PageHeader } from "@/components/PageHeader";
+import { FilterPanel, FilterField } from "@/components/FilterPanel";
 import { PivotTable } from "@/components/report/PivotTable";
 import type { PivotReport } from "@/lib/types";
 
@@ -42,17 +44,12 @@ export function ReportShell({ title, description, endpoint, extraFilters, extraQ
   }, [endpoint, isAdmin, departmentId, year, tick, JSON.stringify(extraQuery)]);
 
   return (
-    <Space direction="vertical" size="large" style={{ width: "100%" }}>
-      <div>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {title}
-        </Typography.Title>
-        <Typography.Text type="secondary">{description}</Typography.Text>
-      </div>
+    <Space direction="vertical" size={18} style={{ width: "100%" }}>
+      <PageHeader title={title} subtitle={description} />
 
-      <Card size="small">
-        <Space wrap size="middle" align="end">
-          {isAdmin && (
+      <FilterPanel>
+        {isAdmin && (
+          <FilterField label="แผนก">
             <Select
               allowClear
               placeholder="ทุกแผนก"
@@ -61,19 +58,21 @@ export function ReportShell({ title, description, endpoint, extraFilters, extraQ
               onChange={setDepartmentId}
               options={config?.departments.map((d) => ({ value: d.id, label: d.code }))}
             />
-          )}
+          </FilterField>
+        )}
+        <FilterField label="ปี">
           <Select
             style={{ width: 110 }}
             value={year}
             onChange={setYear}
             options={YEARS.map((y) => ({ value: y, label: String(y) }))}
           />
-          {extraFilters}
-          <Button icon={<ReloadOutlined />} onClick={() => setTick((t) => t + 1)}>
-            Refresh
-          </Button>
-        </Space>
-      </Card>
+        </FilterField>
+        {extraFilters}
+        <Button icon={<ReloadOutlined />} onClick={() => setTick((t) => t + 1)} style={{ marginBottom: 1 }}>
+          Refresh
+        </Button>
+      </FilterPanel>
 
       <PivotTable data={data} loading={loading} />
     </Space>
