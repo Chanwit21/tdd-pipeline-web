@@ -9,13 +9,17 @@ import { formatAmount, formatMonth, formatDate } from "@/lib/format";
 import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
 import { IcoPipeline, IcoPlus } from "@/components/icons";
 import { DealFormModal } from "@/components/deal/DealFormModal";
+import { MultiCheckbox } from "@/components/MultiCheckbox";
+import { downloadCsv } from "@/lib/export";
+import { useToast } from "@/components/Toast";
 import type { Deal, Page } from "@/lib/types";
 
 const DEFAULT_FILTERS = {
-  departmentId: "",
-  dealStatus: "",
+  departmentId: [] as string[],
+  dealStatus: [] as string[],
   dealStage: "",
   probability: "",
+  createdYear: "",
   closedFrom: "",
   closedTo: "",
   search: "",
@@ -31,11 +35,18 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   const [draft, setDraft] = useState(DEFAULT_FILTERS);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
-  const [size, setSize] = useState(25);
+  const [size, setSize] = useState(10);
   const [data, setData] = useState<Page<Deal> | null>(null);
   const [loading, setLoading] = useState(true);
   const [target, setTarget] = useState<number | "new" | null>(initialTarget ?? null);
 
+  const toast = useToast();
+  const [exporting, setExporting] = useState(false);
+  const [selected, setSelected] = useState<number[]>([]);
+  const query = {
+    ...filters, departmentId: isAdmin ? filters.departmentId : undefined,
+    probability: filters.probability || undefined, createdYear: filters.createdYear || undefined,
+  };
   const load = useCallback(() => {
     setLoading(true);
     api<Page<Deal>>("/api/deals", {
@@ -43,6 +54,8 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         departmentId: isAdmin ? filters.departmentId : undefined,
         dealStatus: filters.dealStatus || undefined,
         dealStage: filters.dealStage || undefined,
+        probability: filters.probability || undefined,
+        createdYear: filters.createdYear || undefined,
         search: filters.search || undefined,
         overdueOnly: filters.overdueOnly || undefined,
         closedFrom: filters.closedFrom || undefined,
@@ -74,8 +87,10 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   function apply() {
     setPage(1);
     setFilters(draft);
+    setSelected([]);
   }
   function reset() {
+    setSelected([]);
     setDraft(DEFAULT_FILTERS);
     setFilters(DEFAULT_FILTERS);
     setPage(1);
@@ -83,6 +98,23 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   function closeModal() {
     setTarget(null);
     if (initialTarget !== undefined) router.replace("/pipeline");
+  }
+
+  async function exportDeals() {
+    setExporting(true);
+    try {
+      let rows: Deal[] = [];
+      if (selected.length) rows = (data?.content ?? []).filter(d => selected.includes(d.id));
+      else {
+        let p = 0, pages = 1;
+        do {
+          const result = await api<Page<Deal>>("/api/deals", { query: { ...query, page: p, size: 200 } });
+          rows.push(...result.content); pages = result.totalPages; p++;
+        } while (p < pages);
+      }
+      downloadCsv("sales-pipeline.csv", [["Record ID", "Customer", "Deal Name", "Department", "Deal Status", "Deal Stage", "Probability", "Situation", "Amount", "Closed Date", "Created Date", "Deal Owner"], ...rows.map(d => [d.recordId, d.customer, d.dealName, d.departmentCode, d.dealStatus, d.dealStage, d.probability, d.situation, d.amount, formatMonth(d.closedDate), formatDate(d.createdDate), d.dealOwner])]);
+    } catch (e) { toast.push(e instanceof Error ? e.message : "Export ไม่สำเร็จ", "error"); }
+    finally { setExporting(false); }
   }
 
   const stageOpts = (config?.dealStages ?? []).map((s) => ({ value: s.name, label: s.name }));
@@ -94,9 +126,11 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         icon={<IcoPipeline size={19} />}
         subtitle="เพิ่มและติดตามดีลทั้งหมดในระบบ"
         actions={
+          <>
+          <button className="btn" disabled={exporting || loading} onClick={exportDeals}>{exporting ? "กำลัง Export…" : selected.length ? `Export ที่เลือก (${selected.length})` : "↓ Export ทั้งหมดตามตัวกรอง"}</button>
           <button className="btn btn-primary" onClick={() => setTarget("new")}>
             <IcoPlus size={14} /> เพิ่ม Deal ใหม่
-          </button>
+          </button></>
         }
       />
 
@@ -116,7 +150,8 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         </div>
       </div>
 
-      <FilterBar
+      <div className="panel pipeline-panel">
+      <FilterBar embedded
         title="ตัวกรองการค้นหา"
         actions={
           <>
@@ -130,20 +165,18 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         }
       >
         {isAdmin && (
-          <Field label="แผนก">
-            <Select
+          <Field label="Department">
+            <MultiCheckbox label="Department"
               value={draft.departmentId}
               onChange={(v) => setDraft({ ...draft, departmentId: v })}
-              all="ทั้งหมด"
               options={(config?.departments ?? []).map((d) => ({ value: String(d.id), label: d.code }))}
             />
           </Field>
         )}
         <Field label="Deal Status">
-          <Select
+          <MultiCheckbox label="Deal Status"
             value={draft.dealStatus}
             onChange={(v) => setDraft({ ...draft, dealStatus: v })}
-            all="ทั้งหมด"
             options={(config?.dealStatuses ?? []).map((s) => ({ value: s, label: s }))}
           />
         </Field>
@@ -182,20 +215,23 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         <Field label="ถึง">
           <input type="month" value={draft.closedTo} onChange={(e) => setDraft({ ...draft, closedTo: e.target.value })} />
         </Field>
+        <Field label="ปีที่สร้าง (Created Date)">
+          <input type="number" min="1900" max="9999" placeholder="ทุกปี" value={draft.createdYear} onChange={e => setDraft({ ...draft, createdYear: e.target.value })} />
+        </Field>
       </FilterBar>
 
-      <div className="panel">
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
+                <th className="col-check"><input type="checkbox" aria-label="เลือกทั้งหมดในหน้านี้" checked={!!data?.content.length && data.content.every(d => selected.includes(d.id))} onChange={e => setSelected(e.target.checked ? data?.content.map(d => d.id) ?? [] : [])} /></th>
                 <th className="col-no">No.</th>
                 <th>Record ID</th>
                 <th>ลูกค้า</th>
                 <th>Deal Name</th>
-                <th>แผนก</th>
-                <th>Status</th>
-                <th>Stage</th>
+                <th>Department</th>
+                <th>Deal Status</th>
+                <th>Deal Stage</th>
                 <th>Probability</th>
                 <th>Situation</th>
                 <th>Amount</th>
@@ -208,12 +244,12 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
             <tbody>
               {loading && (
                 <tr className="empty-row">
-                  <td colSpan={14}>กำลังโหลด…</td>
+                  <td colSpan={15}>กำลังโหลด…</td>
                 </tr>
               )}
               {!loading && data?.content.length === 0 && (
                 <tr className="empty-row">
-                  <td colSpan={14}>ไม่พบ deal ตามเงื่อนไข</td>
+                  <td colSpan={15}>ไม่พบ deal ตามเงื่อนไข</td>
                 </tr>
               )}
               {data?.content.map((d, i) => (
@@ -222,6 +258,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
                   className={`clickable${d.rowColor !== "normal" ? ` row-${d.rowColor}` : ""}`}
                   onClick={() => setTarget(d.id)}
                 >
+                  <td onClick={e => e.stopPropagation()}><input type="checkbox" aria-label={`เลือก ${d.recordId}`} checked={selected.includes(d.id)} onChange={e => setSelected(e.target.checked ? [...selected, d.id] : selected.filter(id => id !== d.id))} /></td>
                   <td className="col-no">{(page - 1) * size + i + 1}</td>
                   <td className={`cell-strong${d.rowColor === "danger" ? " cell-accentbar" : ""}`}>
                     {d.recordId}
@@ -248,8 +285,8 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
                   <td className="cell-muted">{d.probability}</td>
                   <td className="cell-muted">{d.situation}</td>
                   <td className="num cell-strong">{formatAmount(d.amount)}</td>
-                  <td className="cell-muted">{formatMonth(d.closedDate)}</td>
-                  <td className="cell-muted">{formatDate(d.createdDate)}</td>
+                  <td className="cell-muted date-cell">{formatMonth(d.closedDate)}</td>
+                  <td className="cell-muted date-cell">{formatDate(d.createdDate)}</td>
                   <td>{d.dealOwner}</td>
                   <td>
                     <button
@@ -274,7 +311,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
               ? `แสดง ${data.totalElements === 0 ? 0 : (page - 1) * size + 1}–${Math.min(page * size, data.totalElements)} จาก ${data.totalElements} รายการ`
               : "…"}
           </span>
-          <Pager page={page} totalPages={data?.totalPages ?? 1} onPage={setPage} />
+          <Pager page={page} totalPages={data?.totalPages ?? 1} onPage={p => { setPage(p); setSelected([]); }} />
           <span>
             จำนวนรายการต่อหน้า{" "}
             <select
@@ -283,9 +320,10 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
               onChange={(e) => {
                 setPage(1);
                 setSize(Number(e.target.value));
+                setSelected([]);
               }}
             >
-              {[25, 50, 100].map((n) => (
+              {[10, 25, 50].map((n) => (
                 <option key={n}>{n}</option>
               ))}
             </select>

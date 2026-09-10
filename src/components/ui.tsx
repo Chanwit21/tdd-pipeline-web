@@ -57,17 +57,19 @@ export function Panel({
 /* ---------- FilterBar ---------- */
 export function FilterBar({
   title = "ตัวกรอง",
+  embedded = false,
   cols,
   children,
   actions,
 }: {
   title?: string;
   cols?: 4 | 5 | 6;
+  embedded?: boolean;
   children: React.ReactNode;
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="panel">
+    <div className={embedded ? "filter-section" : "panel"}>
       <div className="filter-title">
         <IcoFilter size={14} /> {title}
       </div>

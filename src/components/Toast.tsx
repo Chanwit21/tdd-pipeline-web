@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 type Kind = "info" | "success" | "error";
 interface Item { id: number; text: string; kind: Kind; }
@@ -17,8 +17,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setItems((p) => p.filter((t) => t.id !== id)), 2800);
   }, []);
 
+  const context = useMemo(() => ({ push }), [push]);
   return (
-    <Ctx.Provider value={{ push }}>
+    <Ctx.Provider value={context}>
       {children}
       <div className="toast-wrap">
         {items.map((t) => (

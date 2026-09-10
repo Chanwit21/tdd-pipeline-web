@@ -20,7 +20,9 @@ export interface MasterConfig {
   departments: { id: number; code: string; name: string; defaultOwner: string }[];
   dealTypes: string[];
   dealStatuses: string[];
-  dealStages: { name: string; allowedFor: string[] }[];
+  dealStages: { id: number; name: string; allowedFor: string[] }[];
+  typeOptions: { id: number; name: string }[];
+  statusOptions: { id: number; name: string }[];
   probabilities: { probability: string; situation: string }[];
   rules: { wonProbability: string; poProbability: string };
 }
@@ -102,6 +104,7 @@ export interface PivotReport {
 }
 
 export interface AdminUser {
+  lastLoginAt: string | null;
   id: number;
   username: string;
   fullName: string;
