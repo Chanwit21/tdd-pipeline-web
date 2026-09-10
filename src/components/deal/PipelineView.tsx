@@ -66,6 +66,8 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
       followUp: c.filter((d) => d.dealStatus === "Follow Up").length,
       pr: c.filter((d) => d.dealStatus === "PR").length,
       inactive: c.filter((d) => d.dealStatus === "Inactive").length,
+      overdue: c.filter((d) => d.overdue).length,
+      legacy: c.filter((d) => d.legacyMigrated).length,
     };
   }, [data]);
 
@@ -100,15 +102,14 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
 
       <div className="stat-row">
         <StatChip on label="ทั้งหมด" value={counts.all} />
-        <StatChip label="Follow Up (หน้านี้)" value={counts.followUp} />
-        <StatChip label="PR (หน้านี้)" value={counts.pr} />
-        <StatChip label="Inactive (หน้านี้)" value={counts.inactive} />
+        <StatChip label="Follow Up" value={counts.followUp} />
+        <StatChip label="PR / PO" value={counts.pr} />
+        <StatChip label="Inactive" value={counts.inactive} />
         <div className="updates-card">
           <div>
-            <b>สรุป</b>
+            <b>แจ้งเตือน (หน้านี้)</b>
             <div style={{ color: "var(--text-muted)", fontSize: 11.5, marginTop: 2 }}>
-              {data?.content.filter((d) => d.overdue).length ?? 0} ดีล overdue ·{" "}
-              {data?.content.filter((d) => d.legacyMigrated).length ?? 0} ดีล migrate รอตรวจสอบ
+              {counts.overdue} ดีล overdue ต้องติดตาม · {counts.legacy} ดีล migrate จาก Excel รอตรวจสอบ
             </div>
           </div>
           <div className="bar" />
@@ -201,17 +202,18 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
                 <th>Closed Date</th>
                 <th>Created Date</th>
                 <th>Deal Owner</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr className="empty-row">
-                  <td colSpan={13}>กำลังโหลด…</td>
+                  <td colSpan={14}>กำลังโหลด…</td>
                 </tr>
               )}
               {!loading && data?.content.length === 0 && (
                 <tr className="empty-row">
-                  <td colSpan={13}>ไม่พบ deal ตามเงื่อนไข</td>
+                  <td colSpan={14}>ไม่พบ deal ตามเงื่อนไข</td>
                 </tr>
               )}
               {data?.content.map((d, i) => (
@@ -249,6 +251,18 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
                   <td className="cell-muted">{formatMonth(d.closedDate)}</td>
                   <td className="cell-muted">{formatDate(d.createdDate)}</td>
                   <td>{d.dealOwner}</td>
+                  <td>
+                    <button
+                      className="rowbtn"
+                      title="แก้ไข"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTarget(d.id);
+                      }}
+                    >
+                      ✎
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
