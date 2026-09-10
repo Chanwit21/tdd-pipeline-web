@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import {
   IcoDashboard,
@@ -31,12 +31,49 @@ function initials(name?: string) {
   return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
 }
 
+const COLLAPSE_KEY = "tdd_sidebar_collapsed";
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
   const isAdmin = user?.role === "ADMIN";
+
+  const [open, setOpen] = useState(false); // mobile drawer
+  const [collapsed, setCollapsed] = useState(false); // desktop rail
+
+  useEffect(() => {
+    const isMobile = () => window.matchMedia("(max-width: 860px)").matches;
+    const sync = () => {
+      let stored = false;
+      try {
+        stored = window.localStorage.getItem(COLLAPSE_KEY) === "1";
+      } catch {
+        /* ignore */
+      }
+      setCollapsed(!isMobile() && stored);
+      if (!isMobile()) setOpen(false);
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, []);
+
+  function toggleSidebar() {
+    // < lg → the sidebar is a drawer: open/close it. desktop → collapse to a rail.
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 860px)").matches) {
+      setOpen((o) => !o);
+      return;
+    }
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
 
   const nav = [
     { href: "/dashboard", label: "Dashboard", icon: <IcoDashboard /> },
@@ -61,7 +98,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
-      <aside className={`sidebar${open ? " open" : ""}`}>
+      {open && <div className="sidebar-scrim" onClick={() => setOpen(false)} />}
+
+      <aside className={`sidebar${collapsed ? " collapsed" : ""}${open ? " open" : ""}`}>
+        <button className="sidebar-toggle" onClick={toggleSidebar} title="ย่อ/ขยายเมนู" aria-label="ย่อ/ขยายเมนู">
+          <IcoChevronLeft size={14} />
+        </button>
         <div className="sidebar-inner">
           <div className="brand">
             <div className="brand-mark">TP</div>
@@ -77,6 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href={n.href}
                   className={`nav-item${active(n.href, n.match) ? " active" : ""}`}
+                  title={n.label}
                   onClick={() => setOpen(false)}
                 >
                   {n.icon}
@@ -93,6 +136,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Link
                       href={n.href}
                       className={`nav-item${active(n.href) ? " active" : ""}`}
+                      title={n.label}
                       onClick={() => setOpen(false)}
                     >
                       {n.icon}
@@ -105,7 +149,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </ul>
 
           <div className="sidebar-footer">
-            <div className="role-pill">
+            <div className="role-pill" title={user?.fullName}>
               <div className="avatar">{initials(user?.fullName)}</div>
               <div className="role-pill-text">
                 <b>{user?.fullName}</b>
@@ -123,13 +167,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <button className="crumb-back topbar-menu" onClick={() => setOpen((o) => !o)} aria-label="เมนู">
             <IcoMenu size={14} />
-          </button>
-          <button
-            className="crumb-back"
-            onClick={() => (window.history.length > 1 ? router.back() : router.push("/dashboard"))}
-            aria-label="ย้อนกลับ"
-          >
-            <IcoChevronLeft size={14} />
           </button>
           <div className="breadcrumb">
             <span className="crumb-root">TDD Pipeline</span>
