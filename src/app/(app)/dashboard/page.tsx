@@ -2,29 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Row, Col, Card, Select, DatePicker, Table, Tag, Space, Button } from "antd";
-import {
-  DollarOutlined,
-  CheckCircleOutlined,
-  TrophyOutlined,
-  WarningOutlined,
-} from "@ant-design/icons";
-import dayjs, { Dayjs } from "dayjs";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMasterConfig } from "@/lib/hooks";
-import { formatAmount, formatMonth } from "@/lib/format";
-import { PageHeader } from "@/components/PageHeader";
-import { FilterPanel, FilterField } from "@/components/FilterPanel";
-import { KpiCard } from "@/components/KpiCard";
+import { formatAmount, formatMonth, currentYearMonth } from "@/lib/format";
+import { PageHead, Panel, FilterBar, Field, Select, Badge } from "@/components/ui";
 
 interface Summary {
-  statCards: {
-    totalPipelineAmount: number;
-    bestCaseAmount: number;
-    wonAmount: number;
-    activeDealCount: number;
-  };
+  statCards: { totalPipelineAmount: number; bestCaseAmount: number; wonAmount: number; activeDealCount: number };
   overdue: {
     id: number;
     recordId: string;
@@ -38,14 +23,18 @@ interface Summary {
   byDepartment?: { department: string; dealCount: number; amount: number; bestCase: number }[];
 }
 
+const yearStart = () => currentYearMonth().slice(0, 4) + "-01";
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { config } = useMasterConfig();
   const router = useRouter();
   const isAdmin = user?.role === "ADMIN";
 
-  const [departmentId, setDepartmentId] = useState<number | undefined>();
-  const [range, setRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf("year"), dayjs()]);
+  const [departmentId, setDepartmentId] = useState("");
+  const [from, setFrom] = useState(yearStart());
+  const [to, setTo] = useState(currentYearMonth());
+  const [applied, setApplied] = useState({ departmentId: "", from: yearStart(), to: currentYearMonth() });
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -53,152 +42,199 @@ export default function DashboardPage() {
     setLoading(true);
     api<Summary>("/api/dashboard/summary", {
       query: {
-        departmentId: isAdmin ? departmentId : undefined,
-        from: range[0].format("YYYY-MM"),
-        to: range[1].format("YYYY-MM"),
+        departmentId: isAdmin ? applied.departmentId : undefined,
+        from: applied.from,
+        to: applied.to,
       },
     })
       .then(setData)
       .finally(() => setLoading(false));
-  }, [departmentId, range, isAdmin]);
+  }, [applied, isAdmin]);
 
   const s = data?.statCards;
 
   return (
-    <Space direction="vertical" size={18} style={{ width: "100%" }}>
-      <PageHeader
+    <div className="stack">
+      <PageHead
         title="Dashboard"
-        subtitle={`ภาพรวม pipeline ${isAdmin ? "— ทุกแผนก" : `— แผนก ${user?.departmentCode}`}`}
+        subtitle={isAdmin ? "ภาพรวม Sales Pipeline ทุกแผนก" : `ภาพรวม Sales Pipeline แผนก ${user?.departmentCode}`}
       />
 
-      <FilterPanel>
+      <FilterBar
+        title="ตัวกรอง Dashboard"
+        cols={4}
+        actions={
+          <>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setApplied({ departmentId, from, to })}
+            >
+              🔍 กรอง
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setDepartmentId("");
+                setFrom(yearStart());
+                setTo(currentYearMonth());
+                setApplied({ departmentId: "", from: yearStart(), to: currentYearMonth() });
+              }}
+            >
+              ล้างค่า
+            </button>
+          </>
+        }
+      >
         {isAdmin && (
-          <FilterField label="แผนก">
+          <Field label="แผนก">
             <Select
-              allowClear
-              placeholder="ทุกแผนก"
-              style={{ width: 200 }}
               value={departmentId}
               onChange={setDepartmentId}
-              options={config?.departments.map((d) => ({ value: d.id, label: `${d.code} — ${d.name}` }))}
+              all="ทั้งหมด"
+              options={(config?.departments ?? []).map((d) => ({ value: String(d.id), label: d.code }))}
             />
-          </FilterField>
+          </Field>
         )}
-        <FilterField label="ช่วงเดือน (Closed Date)">
-          <DatePicker.RangePicker
-            picker="month"
-            value={range}
-            allowClear={false}
-            onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])}
-          />
-        </FilterField>
-      </FilterPanel>
+        <Field label="ตั้งแต่เดือน">
+          <input type="month" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </Field>
+        <Field label="ถึงเดือน">
+          <input type="month" value={to} onChange={(e) => setTo(e.target.value)} />
+        </Field>
+      </FilterBar>
 
-      <Row gutter={[14, 14]}>
-        <Col xs={24} sm={12} xl={6}>
-          <KpiCard
-            label="Total Pipeline Amount"
-            value={formatAmount(s?.totalPipelineAmount)}
-            icon={<DollarOutlined />}
-            tone="info"
-            sub={`รวม ${s?.activeDealCount ?? 0} ดีล ที่ยัง Active`}
-          />
-        </Col>
-        <Col xs={24} sm={12} xl={6}>
-          <KpiCard
-            label="Best Case Amount"
-            value={formatAmount(s?.bestCaseAmount)}
-            icon={<CheckCircleOutlined />}
-            tone="success"
-            sub="Probability 75% ขึ้นไป"
-            subStrong
-          />
-        </Col>
-        <Col xs={24} sm={12} xl={6}>
-          <KpiCard
-            label="Won / PO Amount"
-            value={formatAmount(s?.wonAmount)}
-            icon={<TrophyOutlined />}
-            tone="accent"
-            sub="ตามช่วงเดือนที่เลือก"
-          />
-        </Col>
-        <Col xs={24} sm={12} xl={6}>
-          <KpiCard
-            label="Overdue Follow Up"
-            value={String(data?.overdue.length ?? 0)}
-            icon={<WarningOutlined />}
-            tone="danger"
-            sub={data && data.overdue.length > 0 ? "ต้องติดตามด่วน" : "ไม่มีรายการค้าง"}
-          />
-        </Col>
-      </Row>
+      <div className="kpi-grid">
+        <Kpi label="Total Pipeline Amount" value={formatAmount(s?.totalPipelineAmount)} ico="฿" bg="var(--info-weak)" fg="var(--info)" sub={`รวม ${s?.activeDealCount ?? 0} ดีล ที่ยัง Active`} />
+        <Kpi label="Best Case Amount" value={formatAmount(s?.bestCaseAmount)} ico="✓" bg="var(--success-weak)" fg="var(--success)" sub="Probability 75% ขึ้นไป" subStrong />
+        <Kpi label="Won / PO Amount" value={formatAmount(s?.wonAmount)} ico="🏆" bg="var(--accent-weak)" fg="var(--accent-ink)" sub="ตามช่วงเดือนที่เลือก" />
+        <Kpi label="Overdue Follow Up" value={String(data?.overdue.length ?? 0)} ico="!" bg="var(--danger-weak)" fg="var(--danger)" sub={data && data.overdue.length ? "ต้องติดตามด่วน" : "ไม่มีรายการค้าง"} subDanger={!!data?.overdue.length} />
+      </div>
 
       {isAdmin && data?.byDepartment && (
-        <Card title="Breakdown ตามแผนก" size="small">
-          <Table
-            size="small"
-            rowKey="department"
-            pagination={false}
-            loading={loading}
-            dataSource={data.byDepartment}
-            columns={[
-              { title: "แผนก", dataIndex: "department" },
-              { title: "จำนวนดีล", dataIndex: "dealCount" },
-              {
-                title: "Sum of Amount",
-                dataIndex: "amount",
-                align: "right",
-                render: (v) => <span className="num">{formatAmount(v)}</span>,
-              },
-              {
-                title: "Best Case",
-                dataIndex: "bestCase",
-                align: "right",
-                render: (v) => <span className="num">{formatAmount(v)}</span>,
-              },
-            ]}
-          />
-        </Card>
+        <Panel title="สรุป Pipeline แยกตามแผนก" bodyPad={false}>
+          <div className="table-wrap">
+            <table className="pivot">
+              <thead>
+                <tr>
+                  <th className="col-no">No.</th>
+                  <th>แผนก</th>
+                  <th>จำนวนดีล</th>
+                  <th>Sum of Amount</th>
+                  <th>Best Case</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.byDepartment.map((r, i) => (
+                  <tr key={r.department}>
+                    <td className="col-no">{i + 1}</td>
+                    <td>{r.department}</td>
+                    <td className="num">{r.dealCount}</td>
+                    <td className="num">{formatAmount(r.amount)}</td>
+                    <td className="num">{r.bestCase ? formatAmount(r.bestCase) : "—"}</td>
+                  </tr>
+                ))}
+                <tr className="total">
+                  <td className="col-no">—</td>
+                  <td>Grand Total</td>
+                  <td className="num">{data.byDepartment.reduce((a, r) => a + r.dealCount, 0)}</td>
+                  <td className="num grand">{formatAmount(data.byDepartment.reduce((a, r) => a + r.amount, 0))}</td>
+                  <td className="num">{formatAmount(data.byDepartment.reduce((a, r) => a + r.bestCase, 0))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Panel>
       )}
 
-      <Card
-        title="Overdue List"
-        size="small"
-        extra={<Tag color="error" bordered={false}>{data?.overdue.length ?? 0} รายการ</Tag>}
+      <Panel
+        title={<>Deal ที่เลย Closed Date (Overdue)</>}
+        extra={<Badge tone="danger">{data?.overdue.length ?? 0} รายการ</Badge>}
+        bodyPad={false}
       >
-        <Table
-          size="small"
-          rowKey="id"
-          loading={loading}
-          dataSource={data?.overdue}
-          pagination={false}
-          locale={{ emptyText: "ไม่มี deal overdue 🎉" }}
-          columns={[
-            { title: "Customer", dataIndex: "customer" },
-            { title: "Deal Name", dataIndex: "dealName", ellipsis: true },
-            { title: "แผนก", dataIndex: "department", width: 90 },
-            { title: "Deal Owner", dataIndex: "dealOwner", width: 120 },
-            { title: "Closed Date", dataIndex: "closedDate", width: 110, render: (v) => formatMonth(v) },
-            {
-              title: "Amount",
-              dataIndex: "amount",
-              align: "right",
-              render: (v) => <span className="num">{formatAmount(v)}</span>,
-            },
-            {
-              title: "",
-              key: "action",
-              width: 100,
-              render: (_, r) => (
-                <Button type="link" size="small" onClick={() => router.push(`/pipeline/${r.id}`)}>
-                  เปิดแก้ไข
-                </Button>
-              ),
-            },
-          ]}
-        />
-      </Card>
-    </Space>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th className="col-no">No.</th>
+                <th>Record ID</th>
+                <th>ลูกค้า</th>
+                <th>Deal Name</th>
+                <th>แผนก</th>
+                <th>Deal Owner</th>
+                <th>Closed Date</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr className="empty-row">
+                  <td colSpan={9}>กำลังโหลด…</td>
+                </tr>
+              )}
+              {!loading && data?.overdue.length === 0 && (
+                <tr className="empty-row">
+                  <td colSpan={9}>ไม่มี deal overdue 🎉</td>
+                </tr>
+              )}
+              {data?.overdue.map((r, i) => (
+                <tr key={r.id}>
+                  <td className="col-no">{i + 1}</td>
+                  <td className="cell-strong cell-accentbar">{r.recordId}</td>
+                  <td>{r.customer}</td>
+                  <td className="ellipsis" title={r.dealName}>
+                    {r.dealName}
+                  </td>
+                  <td>
+                    <Badge tone="slate">{r.department}</Badge>
+                  </td>
+                  <td>{r.dealOwner}</td>
+                  <td className="cell-muted">{formatMonth(r.closedDate)}</td>
+                  <td className="num cell-strong">{formatAmount(r.amount)}</td>
+                  <td>
+                    <button className="btn btn-sm" onClick={() => router.push(`/pipeline/${r.id}`)}>
+                      เปิดแก้ไข
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function Kpi({
+  label,
+  value,
+  ico,
+  bg,
+  fg,
+  sub,
+  subStrong,
+  subDanger,
+}: {
+  label: string;
+  value: string;
+  ico: string;
+  bg: string;
+  fg: string;
+  sub: string;
+  subStrong?: boolean;
+  subDanger?: boolean;
+}) {
+  return (
+    <div className="kpi-card">
+      <div className="kpi-top">
+        <span>{label}</span>
+        <div className="kpi-ico" style={{ background: bg, color: fg }}>
+          {ico}
+        </div>
+      </div>
+      <div className="kpi-val num">{value}</div>
+      <div className={`kpi-sub${subDanger ? " danger" : ""}`}>{subStrong ? <b>{sub}</b> : sub}</div>
+    </div>
   );
 }

@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Table, Alert, Select, Button, Space, Typography, Spin } from "antd";
 import { api, ApiError } from "@/lib/api";
-import { useToast } from "@/lib/toast";
+import { useToast } from "@/components/Toast";
 import { invalidateMasterConfig } from "@/lib/hooks";
-import { PageHeader } from "@/components/PageHeader";
+import { PageHead, Subtabs, Badge } from "@/components/ui";
 import type { MasterConfig } from "@/lib/types";
+
+type Sub = "dept" | "stage" | "prob" | "type";
 
 export default function MasterConfigPage() {
   const toast = useToast();
   const [config, setConfig] = useState<MasterConfig | null>(null);
+  const [sub, setSub] = useState<Sub>("dept");
   const [wonProb, setWonProb] = useState("");
   const [poProb, setPoProb] = useState("");
 
@@ -38,110 +40,161 @@ export default function MasterConfigPage() {
 
   if (!config) {
     return (
-      <div className="grid place-items-center py-20">
-        <Spin size="large" />
+      <div className="center-screen">
+        <div className="spinner" />
       </div>
     );
   }
 
-  const probOptions = config.probabilities.map((p) => ({ value: p.probability, label: p.probability }));
+  const situationTone = (s: string) =>
+    s === "Best Case" ? "success" : s === "Worst Case" ? "danger" : "warning";
 
   return (
-    <Space direction="vertical" size={18} style={{ width: "100%" }}>
-      <PageHeader
-        title="Master Data"
-        subtitle="แก้ dropdown list และกฎ cascade ที่เคยอยู่ในชีต Master_Config"
-      />
-
-      <Alert
-        type="warning"
-        showIcon
-        message="การแก้ค่าที่นี่กระทบ dropdown และ validation ของ deal ทั้งหมดที่กำลังใช้งานอยู่"
-      />
-
-      <Card title="กฎ Validation (threshold แก้ได้)" size="small">
-        <Space size="large" wrap>
-          <div>
-            <Typography.Text strong>Deal Stage = Won ต้องมี Probability</Typography.Text>
-            <div className="mt-1">
-              <Space.Compact>
-                <Select style={{ width: 160 }} value={wonProb} onChange={setWonProb} options={probOptions} />
-                <Button type="primary" onClick={() => saveRule("XREF_WON_PROBABILITY", wonProb)}>
-                  บันทึก
-                </Button>
-              </Space.Compact>
-            </div>
-          </div>
-          <div>
-            <Typography.Text strong>Deal Stage = PO ต้องมี Probability</Typography.Text>
-            <div className="mt-1">
-              <Space.Compact>
-                <Select style={{ width: 160 }} value={poProb} onChange={setPoProb} options={probOptions} />
-                <Button type="primary" onClick={() => saveRule("XREF_PO_PROBABILITY", poProb)}>
-                  บันทึก
-                </Button>
-              </Space.Compact>
-            </div>
-          </div>
-        </Space>
-      </Card>
-
-      <Card title="Department" size="small">
-        <Table
-          size="small"
-          rowKey="code"
-          pagination={false}
-          dataSource={config.departments}
-          columns={[
-            { title: "Code", dataIndex: "code" },
-            { title: "ชื่อเต็ม", dataIndex: "name" },
-            { title: "Deal Owner (default)", dataIndex: "defaultOwner", render: (v) => v || "—" },
-          ]}
-        />
-      </Card>
-
-      <Card title="Deal Stage → Deal Status ที่อนุญาต (cascade)" size="small">
-        <Table
-          size="small"
-          rowKey="name"
-          pagination={false}
-          dataSource={config.dealStages}
-          columns={[
-            { title: "Deal Stage", dataIndex: "name" },
-            { title: "อยู่ภายใต้ Deal Status", dataIndex: "allowedFor", render: (v: string[]) => v.join(", ") },
-          ]}
-        />
-      </Card>
-
-      <Card title="Probability → Situation" size="small">
-        <Table
-          size="small"
-          rowKey="probability"
-          pagination={false}
-          dataSource={config.probabilities}
-          columns={[
-            { title: "Probability", dataIndex: "probability" },
-            { title: "Situation", dataIndex: "situation" },
-          ]}
-        />
-      </Card>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card title="Deal Type" size="small">
-          <ul className="m-0 pl-5">
-            {config.dealTypes.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
-        </Card>
-        <Card title="Deal Status" size="small">
-          <ul className="m-0 pl-5">
-            {config.dealStatuses.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ul>
-        </Card>
+    <div className="stack">
+      <PageHead title="Master Data" subtitle="จัดการ dropdown list และกฎ business rule ของทั้งระบบ" />
+      <div className="warn-banner" style={{ marginBottom: 16 }}>
+        ⚠️ การแก้ไขค่าในหน้านี้มีผลกับดีลทั้งหมดที่ใช้งานอยู่ในระบบทันที
       </div>
-    </Space>
+
+      <div className="panel">
+        <Subtabs
+          value={sub}
+          onChange={setSub}
+          items={[
+            { value: "dept", label: "แผนก (Department)" },
+            { value: "stage", label: "Deal Stage" },
+            { value: "prob", label: "Probability → Situation" },
+            { value: "type", label: "Deal Type / Status" },
+          ]}
+        />
+
+        {sub === "dept" && (
+          <div className="subpanel">
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="col-no">No.</th>
+                    <th>รหัสแผนก</th>
+                    <th>ชื่อเต็ม</th>
+                    <th>Deal Owner (Lock)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {config.departments.map((d, i) => (
+                    <tr key={d.code}>
+                      <td className="col-no">{i + 1}</td>
+                      <td className="cell-strong">{d.code}</td>
+                      <td>{d.name}</td>
+                      <td>{d.defaultOwner || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {sub === "stage" && (
+          <div className="subpanel">
+            {config.dealStatuses.map((st) => {
+              const stages = config.dealStages.filter((s) => s.allowedFor.includes(st));
+              return (
+                <div className="rule-line" key={st}>
+                  <b style={{ width: 120 }}>{st}</b>
+                  <span className="arrow">→</span>
+                  <div className="chiprow">
+                    {stages.map((s) => (
+                      <span className="chip" key={s.name}>
+                        {s.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {sub === "prob" && (
+          <div className="subpanel">
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="col-no">No.</th>
+                    <th>Probability</th>
+                    <th>Situation (คำนวณอัตโนมัติ)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {config.probabilities.map((p, i) => (
+                    <tr key={p.probability}>
+                      <td className="col-no">{i + 1}</td>
+                      <td>{p.probability}</td>
+                      <td>
+                        <Badge tone={situationTone(p.situation)}>{p.situation}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="rule-line" style={{ marginTop: 12, alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
+              <b>Rule เพิ่มเติม (แก้ threshold ได้):</b>
+              <label className="check" style={{ padding: 0, gap: 6 }}>
+                Won ต้องมี Probability
+                <select value={wonProb} onChange={(e) => setWonProb(e.target.value)} style={{ padding: "4px 8px" }}>
+                  {config.probabilities.map((p) => (
+                    <option key={p.probability}>{p.probability}</option>
+                  ))}
+                </select>
+                <button className="btn btn-sm btn-primary" onClick={() => saveRule("XREF_WON_PROBABILITY", wonProb)}>
+                  บันทึก
+                </button>
+              </label>
+              <label className="check" style={{ padding: 0, gap: 6 }}>
+                PO ต้องมี Probability
+                <select value={poProb} onChange={(e) => setPoProb(e.target.value)} style={{ padding: "4px 8px" }}>
+                  {config.probabilities.map((p) => (
+                    <option key={p.probability}>{p.probability}</option>
+                  ))}
+                </select>
+                <button className="btn btn-sm btn-primary" onClick={() => saveRule("XREF_PO_PROBABILITY", poProb)}>
+                  บันทึก
+                </button>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {sub === "type" && (
+          <div className="subpanel">
+            <div className="form-grid">
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>Deal Type</div>
+                <div className="chiprow">
+                  {config.dealTypes.map((t) => (
+                    <span className="chip" key={t}>
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>Deal Status</div>
+                <div className="chiprow">
+                  {config.dealStatuses.map((s) => (
+                    <span className="chip" key={s}>
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
