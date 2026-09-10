@@ -174,7 +174,7 @@ a { color: inherit; text-decoration: none; }
 .btn:hover { filter: brightness(0.98); }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #1a0e04; box-shadow: 0 8px 18px -8px rgba(255, 122, 31, 0.6); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 8px 18px -8px rgba(255, 122, 31, 0.6); }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); }
 .btn-ghost:hover { background: var(--surface-2); }
 .btn-sm { padding: 6px 11px; font-size: 12px; }
@@ -265,7 +265,7 @@ tbody tr.clickable { cursor: pointer; }
 .pager { display: flex; align-items: center; gap: 6px; }
 .pager button { min-width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; color: var(--text-muted); padding: 0 6px; }
 .pager button:disabled { opacity: 0.4; cursor: not-allowed; }
-.pager button.on { background: var(--accent); border-color: var(--accent); color: #1a0e04; font-weight: 700; }
+.pager button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 .foot-select { border: 1px solid var(--border-strong); border-radius: 7px; padding: 4px 8px; font-size: 12px; color: var(--text); background: var(--surface); }
 
 /* pivot tables */
@@ -386,7 +386,7 @@ tbody tr.row-success:hover > td, tbody tr.row-slate:hover > td, tbody tr.row-dan
 .login-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
 .btn-login {
   width: 100%; border: 0; border-radius: 10px; padding: 12px; background: linear-gradient(135deg, var(--accent), #ff9c4d);
-  color: #1a0e04; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 12px 24px -10px rgba(255, 122, 31, 0.55);
+  color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 12px 24px -10px rgba(255, 122, 31, 0.55);
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 .btn-login:hover { filter: brightness(1.03); }

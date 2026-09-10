@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -68,62 +68,85 @@ export function ReportPage({ report }: { report: ReportKey }) {
         style={{ marginBottom: 16 }}
       />
 
-      <div className="panel">
-        <div className="filter-grid cols-5" style={{ paddingBottom: 16 }}>
-          <Field label="ปี">
+      {(() => {
+        const fields: ReactNode[] = [
+          <Field key="year" label="ปี">
             <Select
               value={String(year)}
               onChange={(v) => setYear(Number(v))}
               options={YEARS.map((y) => ({ value: String(y), label: String(y) }))}
             />
-          </Field>
-          {isAdmin && (
-            <Field label="แผนก">
+          </Field>,
+        ];
+        if (isAdmin)
+          fields.push(
+            <Field key="dept" label="แผนก">
               <Select
                 value={departmentId}
                 onChange={setDepartmentId}
                 all="ทั้งหมด"
                 options={(config?.departments ?? []).map((d) => ({ value: String(d.id), label: d.code }))}
               />
-            </Field>
-          )}
-          {report !== "pr-by-team" && (
-            <Field label="Deal Status">
+            </Field>,
+          );
+        if (report !== "pr-by-team")
+          fields.push(
+            <Field key="status" label="Deal Status">
               <Select
                 value={dealStatus}
                 onChange={setDealStatus}
                 all="ทั้งหมด"
                 options={(config?.dealStatuses ?? []).map((s) => ({ value: s, label: s }))}
               />
-            </Field>
-          )}
-          {report === "pipeline-by-team" && (
-            <>
-              <Field label="Probability">
-                <Select
-                  value={probability}
-                  onChange={setProbability}
-                  all="ทั้งหมด"
-                  options={(config?.probabilities ?? []).map((p) => ({ value: p.probability, label: p.probability }))}
-                />
+            </Field>,
+          );
+        if (report === "pipeline-by-team") {
+          fields.push(
+            <Field key="prob" label="Probability">
+              <Select
+                value={probability}
+                onChange={setProbability}
+                all="ทั้งหมด"
+                options={(config?.probabilities ?? []).map((p) => ({ value: p.probability, label: p.probability }))}
+              />
+            </Field>,
+            <Field key="stage" label="Deal Stage">
+              <Select
+                value={dealStage}
+                onChange={setDealStage}
+                all="ทั้งหมด"
+                options={(config?.dealStages ?? []).map((s) => ({ value: s.name, label: s.name }))}
+              />
+            </Field>,
+          );
+        }
+        return (
+          <div className="panel">
+            <div
+              className="filter-grid"
+              style={{
+                gridTemplateColumns: `repeat(${fields.length + 1}, minmax(0, 200px))`,
+                paddingBottom: 16,
+              }}
+            >
+              {fields}
+              <Field label={" "}>
+                <button className="btn btn-primary btn-sm" onClick={() => setTick((t) => t + 1)}>
+                  Refresh
+                </button>
               </Field>
-              <Field label="Deal Stage">
-                <Select
-                  value={dealStage}
-                  onChange={setDealStage}
-                  all="ทั้งหมด"
-                  options={(config?.dealStages ?? []).map((s) => ({ value: s.name, label: s.name }))}
-                />
-              </Field>
-            </>
-          )}
-          <Field label=" ">
-            <button className="btn btn-primary btn-sm" onClick={() => setTick((t) => t + 1)}>
-              Refresh
-            </button>
-          </Field>
-        </div>
+            </div>
+            <ReportTable data={data} loading={loading} />
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
 
+function ReportTable({ data, loading }: { data: PivotReport | null; loading: boolean }) {
+  return (
+    <>
         <div className="table-wrap" style={{ padding: "0 18px 18px" }}>
           <table className="pivot">
             <thead>
@@ -170,7 +193,6 @@ export function ReportPage({ report }: { report: ReportKey }) {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+    </>
   );
 }
