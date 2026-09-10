@@ -85,13 +85,23 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
   }, [config, v.departmentId, deal]);
 
   const situation = config ? situationFor(v.probability, config) : "";
-  const stageOptions = config ? stagesForStatus(v.dealStatus, config) : [];
+  const stageOptions = config ? stagesForStatus(v.dealStatus, config).filter(s =>
+    (s !== "Won" || v.probability === config.rules.wonProbability) &&
+    (s !== "PO" || v.probability === config.rules.poProbability)) : [];
+  const statusOptions = config ? config.dealStatuses.filter(status => stagesForStatus(status, config).some(s =>
+    (s !== "Won" || v.probability === config.rules.wonProbability) &&
+    (s !== "PO" || v.probability === config.rules.poProbability))) : [];
   const liveHint = config ? crossFieldHint(v, config) : null;
 
   function set<K extends keyof DealFormValues>(key: K, val: DealFormValues[K]) {
     setV((prev) => {
       const next = { ...prev, [key]: val };
       if (key === "dealStatus") next.dealStage = "";
+      if (key === "probability" && config) {
+        const allowed = stagesForStatus(next.dealStatus, config).filter(s => (s !== "Won" || next.probability === config.rules.wonProbability) && (s !== "PO" || next.probability === config.rules.poProbability));
+        if (!allowed.includes(next.dealStage)) next.dealStage = "";
+        if (!allowed.length) next.dealStatus = "";
+      }
       return next;
     });
     setErrors((prev) => {
@@ -167,7 +177,7 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
   const deptLocked = !isAdmin;
 
   return (
-    <Modal open onClose={onClose}>
+    <Modal open onClose={() => { if (!saving) onClose(); }}>
       <div className="modal-head">
         <div>
           <h3>{isNew ? "สร้าง Deal ใหม่" : `แก้ไข Deal — ${deal?.recordId ?? ""}`}</h3>
@@ -241,10 +251,23 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
               <textarea value={v.dealName} onChange={(e) => set("dealName", e.target.value)} />
             </FF>
 
-            <FF id="dealStatus" label="Deal Status" required error={errors.dealStatus}>
-              <select value={v.dealStatus} onChange={(e) => set("dealStatus", e.target.value)}>
+            <FF id="probability" label="Probability" required error={errors.probability || liveHint || undefined}>
+              <select value={v.probability} onChange={(e) => set("probability", e.target.value)}>
                 <option value="">— เลือก —</option>
-                {config.dealStatuses.map((s) => (
+                {config.probabilities.map((p) => (
+                  <option key={p.probability}>{p.probability}</option>
+                ))}
+              </select>
+            </FF>
+
+            <FF id="situation" label="Situation (คำนวณอัตโนมัติ)" readonly>
+              <input value={situation} disabled />
+            </FF>
+
+            <FF id="dealStatus" label="Deal Status" required error={errors.dealStatus}>
+              <select disabled={!v.probability} value={v.dealStatus} onChange={(e) => set("dealStatus", e.target.value)}>
+                <option value="">— เลือก —</option>
+                {statusOptions.map((s) => (
                   <option key={s}>{s}</option>
                 ))}
               </select>
@@ -257,19 +280,6 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
                   <option key={s}>{s}</option>
                 ))}
               </select>
-            </FF>
-
-            <FF id="probability" label="Probability" required error={errors.probability || liveHint || undefined}>
-              <select value={v.probability} onChange={(e) => set("probability", e.target.value)}>
-                <option value="">— เลือก —</option>
-                {config.probabilities.map((p) => (
-                  <option key={p.probability}>{p.probability}</option>
-                ))}
-              </select>
-            </FF>
-
-            <FF id="situation" label="Situation (คำนวณอัตโนมัติ)" readonly>
-              <input value={situation} disabled />
             </FF>
 
             <FF id="closedDate" label="Closed Date (เดือน/ปี)" required error={errors.closedDate}>

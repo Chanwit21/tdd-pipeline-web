@@ -10,21 +10,21 @@ export function formatMonth(ym: string | null | undefined): string {
   if (!ym) return "—";
   const [y, m] = ym.split("-");
   if (!y || !m) return ym;
-  return `${m}/${y}`;
+  return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 }
 
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("th-TH", {
+  return d.toLocaleString("en-GB", {
     year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
 }

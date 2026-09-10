@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useMasterConfig } from "@/lib/hooks";
 import { useToast } from "@/components/Toast";
-import { PageHead, Modal, Badge } from "@/components/ui";
+import { PageHead, Modal, Badge, Pager } from "@/components/ui";
+import { formatDateTime } from "@/lib/format";
 import type { AdminUser, FieldError } from "@/lib/types";
 
 interface FormState {
@@ -34,6 +35,9 @@ export default function UserManagementPage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const size = 10;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(users.length / size)));
 
   const load = () => api<AdminUser[]>("/api/admin/users").then(setUsers);
   useEffect(() => {
@@ -110,13 +114,14 @@ export default function UserManagementPage() {
                 <th>Role</th>
                 <th>แผนก</th>
                 <th>สถานะ</th>
+                <th>เข้าใช้ล่าสุด</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u, i) => (
+              {users.slice((currentPage - 1) * size, currentPage * size).map((u, i) => (
                 <tr key={u.id}>
-                  <td className="col-no">{i + 1}</td>
+                  <td className="col-no">{(currentPage - 1) * size + i + 1}</td>
                   <td className="cell-strong">{u.username}</td>
                   <td>{u.fullName}</td>
                   <td>
@@ -126,9 +131,12 @@ export default function UserManagementPage() {
                   <td>
                     <Badge tone={u.active ? "success" : "slate"}>{u.active ? "Active" : "Inactive"}</Badge>
                   </td>
+                  <td className="date-cell cell-muted">{u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "—"}</td>
                   <td style={{ textAlign: "right" }}>
+                    <span className="sr-only">Actions</span>
                     <button
-                      className="linkbtn"
+                      className="rowbtn"
+                      title={`แก้ไข ${u.username}`}
                       style={{ marginRight: 14 }}
                       onClick={() => {
                         setErrors({});
@@ -143,7 +151,7 @@ export default function UserManagementPage() {
                         });
                       }}
                     >
-                      แก้ไข
+                      ✎
                     </button>
                     <button className="linkbtn" style={{ color: "var(--text-muted)" }} onClick={() => toggleActive(u)}>
                       {u.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
@@ -156,6 +164,7 @@ export default function UserManagementPage() {
         </div>
         <div className="table-foot">
           <span>แสดง {users.length} รายการ</span>
+          <Pager page={currentPage} totalPages={Math.ceil(users.length / size)} onPage={setPage} />
         </div>
       </div>
 
