@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Spin } from "antd";
 import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
+import { CenterSpinner } from "@/components/ui";
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -14,13 +14,6 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
     if (!loading && !user) router.replace("/login");
   }, [user, loading, router]);
 
-  if (loading || !user) {
-    return (
-      <div className="grid h-screen place-items-center">
-        <Spin size="large" />
-      </div>
-    );
-  }
-
+  if (loading || !user) return <CenterSpinner />;
   return <AppShell>{children}</AppShell>;
 }

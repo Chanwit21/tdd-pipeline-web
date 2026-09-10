@@ -1,30 +1,29 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  InputNumber,
-  Button,
-  Tabs,
-  Alert,
-  Timeline,
-  Table,
-  Typography,
-  Space,
-  Spin,
-} from "antd";
-import dayjs from "dayjs";
+import { Modal } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMasterConfig } from "@/lib/hooks";
-import { useToast } from "@/lib/toast";
+import { useToast } from "@/components/Toast";
 import { crossFieldHint, situationFor, stagesForStatus, validateDeal } from "@/lib/validation";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, todayIso } from "@/lib/format";
 import type { Deal, DealFormValues, FieldError } from "@/lib/types";
+
+const EMPTY: DealFormValues = {
+  departmentId: null,
+  customer: "",
+  dealName: "",
+  dealType: "",
+  dealStatus: "",
+  dealStage: "",
+  probability: "",
+  closedDate: "",
+  amount: "",
+  projectCode: "",
+  costSheetNo: "",
+  createdDate: "",
+};
 
 interface Props {
   target: number | "new" | null;
@@ -32,56 +31,35 @@ interface Props {
   onSaved: () => void;
 }
 
-type FormShape = {
-  departmentId?: number;
-  customer?: string;
-  dealName?: string;
-  dealType?: string;
-  dealStatus?: string;
-  dealStage?: string;
-  probability?: string;
-  closedDate?: dayjs.Dayjs;
-  amount?: number;
-  projectCode?: string;
-  costSheetNo?: string;
-  createdDate?: dayjs.Dayjs;
-};
-
 export function DealFormModal({ target, onClose, onSaved }: Props) {
   const { user } = useAuth();
   const { config } = useMasterConfig();
   const toast = useToast();
-  const [form] = Form.useForm<FormShape>();
   const isAdmin = user?.role === "ADMIN";
   const isNew = target === "new";
 
+  const [tab, setTab] = useState<"info" | "notes">("info");
+  const [v, setV] = useState<DealFormValues>(EMPTY);
   const [deal, setDeal] = useState<Deal | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState("deal");
   const [noteText, setNoteText] = useState("");
-  const [watch, setWatch] = useState<FormShape>({});
 
   useEffect(() => {
     if (target === null || !config) return;
     setLoading(true);
-    setTab("deal");
-    form.resetFields();
-
+    setTab("info");
+    setErrors({});
     if (isNew) {
       setDeal(null);
-      const init: FormShape = {
-        departmentId: isAdmin ? undefined : user?.departmentId ?? undefined,
-        createdDate: dayjs(),
-      };
-      form.setFieldsValue(init);
-      setWatch(init);
+      setV({ ...EMPTY, departmentId: isAdmin ? null : user?.departmentId ?? null, createdDate: todayIso() });
       setLoading(false);
     } else {
       api<Deal>(`/api/deals/${target}`)
         .then((d) => {
           setDeal(d);
-          const v: FormShape = {
+          setV({
             departmentId: d.departmentId,
             customer: d.customer,
             dealName: d.dealName,
@@ -89,82 +67,74 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
             dealStatus: d.dealStatus,
             dealStage: d.dealStage,
             probability: d.probability,
-            closedDate: dayjs(d.closedDate + "-01"),
-            amount: d.amount,
-            projectCode: d.projectCode ?? undefined,
-            costSheetNo: d.costSheetNo ?? undefined,
-            createdDate: dayjs(d.createdDate),
-          };
-          form.setFieldsValue(v);
-          setWatch(v);
+            closedDate: d.closedDate,
+            amount: String(d.amount),
+            projectCode: d.projectCode ?? "",
+            costSheetNo: d.costSheetNo ?? "",
+            createdDate: d.createdDate,
+          });
         })
         .catch((e) => toast.push(e instanceof ApiError ? e.message : "โหลด deal ไม่สำเร็จ", "error"))
         .finally(() => setLoading(false));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target, config, isNew]);
+  }, [target, config, isNew, isAdmin, user, toast]);
 
   const dealOwner = useMemo(() => {
-    if (!config || !watch.departmentId) return deal?.dealOwner ?? "";
-    return config.departments.find((d) => d.id === watch.departmentId)?.defaultOwner ?? "";
-  }, [config, watch.departmentId, deal]);
+    if (!config || !v.departmentId) return deal?.dealOwner ?? "";
+    return config.departments.find((d) => d.id === v.departmentId)?.defaultOwner ?? "";
+  }, [config, v.departmentId, deal]);
 
-  const situation = config && watch.probability ? situationFor(watch.probability, config) : "";
-  const stageOptions = config && watch.dealStatus ? stagesForStatus(watch.dealStatus, config) : [];
-  const liveHint =
-    config && watch.probability
-      ? crossFieldHint(
-          { ...(watch as unknown as DealFormValues), dealStage: watch.dealStage ?? "" },
-          config,
-        )
-      : null;
+  const situation = config ? situationFor(v.probability, config) : "";
+  const stageOptions = config ? stagesForStatus(v.dealStatus, config) : [];
+  const liveHint = config ? crossFieldHint(v, config) : null;
 
-  function toFormValues(v: FormShape): DealFormValues {
-    return {
-      departmentId: v.departmentId ?? null,
-      customer: v.customer ?? "",
-      dealName: v.dealName ?? "",
-      dealType: v.dealType ?? "",
-      dealStatus: v.dealStatus ?? "",
-      dealStage: v.dealStage ?? "",
-      probability: v.probability ?? "",
-      closedDate: v.closedDate ? v.closedDate.format("YYYY-MM") : "",
-      amount: v.amount != null ? String(v.amount) : "",
-      projectCode: v.projectCode ?? "",
-      costSheetNo: v.costSheetNo ?? "",
-      createdDate: v.createdDate ? v.createdDate.format("YYYY-MM-DD") : "",
-    };
+  function set<K extends keyof DealFormValues>(key: K, val: DealFormValues[K]) {
+    setV((prev) => {
+      const next = { ...prev, [key]: val };
+      if (key === "dealStatus") next.dealStage = "";
+      return next;
+    });
+    setErrors((prev) => {
+      const { [key]: _drop, ...rest } = prev;
+      return rest;
+    });
+  }
+
+  function applyErrors(list: FieldError[]) {
+    const map: Record<string, string> = {};
+    for (const e of list) if (e.field) map[e.field] = e.message;
+    setErrors(map);
+    const first = list.find((e) => e.field)?.field;
+    if (first) document.getElementById(`fld-${first}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   async function save() {
     if (!config) return;
-    const raw = form.getFieldsValue(true) as FormShape;
-    const values = toFormValues(raw);
-    const errs = validateDeal(values, config);
-    if (errs.length) {
-      applyErrors(errs);
-      toast.push(`กรอกข้อมูลไม่ครบ/ไม่ถูกต้อง ${errs.length} จุด`, "error");
+    const clientErrors = validateDeal(v, config);
+    if (clientErrors.length) {
+      applyErrors(clientErrors);
+      toast.push("กรุณาแก้ไขข้อมูลที่ยังไม่ถูกต้องก่อนบันทึก", "error");
       return;
     }
     setSaving(true);
     const payload = {
-      departmentId: values.departmentId,
-      customer: values.customer,
-      dealName: values.dealName,
-      dealType: values.dealType,
-      dealStatus: values.dealStatus,
-      dealStage: values.dealStage,
-      probability: values.probability,
-      closedDate: values.closedDate,
-      amount: values.amount,
-      projectCode: values.projectCode || null,
-      costSheetNo: values.costSheetNo || null,
-      createdDate: values.createdDate,
+      departmentId: v.departmentId,
+      customer: v.customer,
+      dealName: v.dealName,
+      dealType: v.dealType,
+      dealStatus: v.dealStatus,
+      dealStage: v.dealStage,
+      probability: v.probability,
+      closedDate: v.closedDate,
+      amount: v.amount,
+      projectCode: v.projectCode || null,
+      costSheetNo: v.costSheetNo || null,
+      createdDate: v.createdDate,
     };
     try {
       if (isNew) await api("/api/deals", { method: "POST", body: payload });
       else await api(`/api/deals/${target}`, { method: "PUT", body: payload });
-      toast.push("บันทึกสำเร็จ", "success");
+      toast.push("บันทึกข้อมูลเรียบร้อยแล้ว", "success");
       onSaved();
       onClose();
     } catch (e) {
@@ -177,15 +147,6 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
     } finally {
       setSaving(false);
     }
-  }
-
-  function applyErrors(list: FieldError[]) {
-    const byField = new Map<string, string[]>();
-    for (const e of list) {
-      if (!e.field) continue;
-      byField.set(e.field, [...(byField.get(e.field) ?? []), e.message]);
-    }
-    form.setFields([...byField.entries()].map(([name, errors]) => ({ name, errors })) as never);
   }
 
   async function addNote() {
@@ -202,225 +163,247 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
     }
   }
 
-  const dealTab = (
-    <Form
-      form={form}
-      layout="vertical"
-      requiredMark
-      onValuesChange={(changed, all) => {
-        if ("dealStatus" in changed) {
-          form.setFieldValue("dealStage", undefined);
-          setWatch({ ...all, dealStage: undefined });
-        } else {
-          setWatch(all);
-        }
-      }}
-    >
-      <div className="grid gap-x-4 sm:grid-cols-2">
-        <Form.Item name="departmentId" label="Department" rules={[{ required: true, message: "กรุณาเลือกแผนก" }]}>
-          <Select
-            disabled={!isAdmin}
-            placeholder="เลือกแผนก"
-            options={config?.departments.map((d) => ({ value: d.id, label: `${d.code} — ${d.name}` }))}
-          />
-        </Form.Item>
-
-        <Form.Item label="Deal Owner (auto)">
-          <Input value={dealOwner} disabled />
-        </Form.Item>
-
-        <Form.Item name="customer" label="Customer" rules={[{ required: true, message: "กรุณากรอกชื่อลูกค้า" }]}>
-          <Input />
-        </Form.Item>
-
-        <Form.Item name="dealType" label="Deal Type" rules={[{ required: true, message: "กรุณาเลือก Deal Type" }]}>
-          <Select options={config?.dealTypes.map((t) => ({ value: t, label: t }))} />
-        </Form.Item>
-
-        <Form.Item
-          name="dealName"
-          label="Deal Name"
-          className="sm:col-span-2"
-          rules={[{ required: true, message: "กรุณากรอกชื่อ Deal" }]}
-        >
-          <Input.TextArea autoSize={{ minRows: 2 }} />
-        </Form.Item>
-
-        <Form.Item name="dealStatus" label="Deal Status" rules={[{ required: true, message: "กรุณาเลือก Deal Status" }]}>
-          <Select options={config?.dealStatuses.map((s) => ({ value: s, label: s }))} />
-        </Form.Item>
-
-        <Form.Item name="dealStage" label="Deal Stage" rules={[{ required: true, message: "กรุณาเลือก Deal Stage" }]}>
-          <Select
-            disabled={!watch.dealStatus}
-            options={stageOptions.map((s) => ({ value: s, label: s }))}
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="probability"
-          label="Probability"
-          rules={[{ required: true, message: "กรุณาเลือก Probability" }]}
-          validateStatus={liveHint ? "error" : undefined}
-          help={liveHint || undefined}
-        >
-          <Select options={config?.probabilities.map((p) => ({ value: p.probability, label: p.probability }))} />
-        </Form.Item>
-
-        <Form.Item label="Situation (auto)">
-          <Input value={situation} disabled />
-        </Form.Item>
-
-        <Form.Item
-          name="closedDate"
-          label="Closed Date (เดือน/ปี)"
-          rules={[{ required: true, message: "กรุณาเลือก Closed Date" }]}
-        >
-          <DatePicker picker="month" style={{ width: "100%" }} />
-        </Form.Item>
-
-        <Form.Item
-          name="amount"
-          label="Amount (บาท)"
-          rules={[
-            { required: true, message: "กรุณากรอก Amount" },
-            { type: "number", min: 1, message: "Amount ต้องเป็นตัวเลขบวก" },
-          ]}
-        >
-          <InputNumber<number>
-            style={{ width: "100%" }}
-            className="num"
-            min={0}
-            formatter={(v) => (v === undefined ? "" : `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","))}
-            parser={(v) => Number((v ?? "").replace(/,/g, "")) || 0}
-          />
-        </Form.Item>
-
-        <Form.Item label="Created Date" required className="sm:col-span-2">
-          <Space.Compact style={{ width: "100%" }}>
-            <Form.Item name="createdDate" noStyle rules={[{ required: true, message: "กรุณาเลือก Created Date" }]}>
-              <DatePicker style={{ width: "100%" }} />
-            </Form.Item>
-            <Button onClick={() => form.setFieldValue("createdDate", dayjs())}>วันนี้</Button>
-          </Space.Compact>
-        </Form.Item>
-
-        <Form.Item name="projectCode" label="รหัสโครงการ (optional)">
-          <Input />
-        </Form.Item>
-
-        <Form.Item name="costSheetNo" label="Cost sheet No. (optional)">
-          <Input />
-        </Form.Item>
-      </div>
-    </Form>
-  );
-
-  const notesTab = (
-    <Space direction="vertical" size="large" style={{ width: "100%" }}>
-      <div>
-        <Typography.Title level={5}>Note Timeline</Typography.Title>
-        <Space.Compact style={{ width: "100%" }}>
-          <Input.TextArea
-            autoSize={{ minRows: 1 }}
-            placeholder="เพิ่ม note ใหม่…"
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-          />
-          <Button type="primary" onClick={addNote} disabled={!noteText.trim()}>
-            เพิ่ม Note
-          </Button>
-        </Space.Compact>
-        <Timeline
-          style={{ marginTop: 16 }}
-          items={
-            (deal?.notes ?? []).map((n) => ({
-              children: (
-                <div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {formatDateTime(n.createdAt)} · {n.authorName}
-                  </Typography.Text>
-                  <div style={{ whiteSpace: "pre-wrap" }}>{n.text}</div>
-                </div>
-              ),
-            })) || []
-          }
-        />
-        {deal?.notes.length === 0 && <Typography.Text type="secondary">ยังไม่มี note</Typography.Text>}
-      </div>
-
-      <div>
-        <Typography.Title level={5}>ประวัติการแก้ไข (Change History)</Typography.Title>
-        <Table
-          size="small"
-          rowKey="id"
-          pagination={false}
-          dataSource={deal?.history}
-          locale={{ emptyText: "ยังไม่มีประวัติการแก้ไข" }}
-          columns={[
-            { title: "เวลา", dataIndex: "changedAt", render: (v) => formatDateTime(v), width: 170 },
-            { title: "ผู้แก้ไข", dataIndex: "changedByName", width: 130 },
-            { title: "Field", dataIndex: "field", width: 120 },
-            {
-              title: "ค่าเดิม → ค่าใหม่",
-              key: "diff",
-              render: (_, h) => (
-                <span>
-                  <Typography.Text delete type="secondary">
-                    {h.oldValue ?? "—"}
-                  </Typography.Text>{" "}
-                  → <b>{h.newValue ?? "—"}</b>
-                </span>
-              ),
-            },
-          ]}
-        />
-      </div>
-    </Space>
-  );
+  if (target === null) return null;
+  const deptLocked = !isAdmin;
 
   return (
-    <Modal
-      open={target !== null}
-      onCancel={onClose}
-      title={isNew ? "สร้าง Deal ใหม่" : `แก้ไข Deal ${deal?.recordId ?? ""}`}
-      width={780}
-      styles={{ body: { maxHeight: "70vh", overflowY: "auto" } }}
-      footer={[
-        <Button key="cancel" onClick={onClose}>
-          ยกเลิก
-        </Button>,
-        <Button key="save" type="primary" loading={saving} onClick={save} disabled={loading}>
-          บันทึก
-        </Button>,
-      ]}
-      destroyOnClose
-    >
+    <Modal open onClose={onClose}>
+      <div className="modal-head">
+        <div>
+          <h3>{isNew ? "สร้าง Deal ใหม่" : `แก้ไข Deal — ${deal?.recordId ?? ""}`}</h3>
+          <div className="sub">
+            {isNew
+              ? "กรอกข้อมูลดีลใหม่ให้ครบก่อนบันทึก"
+              : deal
+              ? `${deal.customer} · ${deal.dealName}`
+              : "…"}
+          </div>
+        </div>
+        <button className="icon-x" onClick={onClose}>
+          ✕
+        </button>
+      </div>
+
+      <div className="modal-tabs">
+        <button className={`mtab${tab === "info" ? " active" : ""}`} onClick={() => setTab("info")}>
+          ข้อมูล Deal
+        </button>
+        <button
+          className={`mtab${tab === "notes" ? " active" : ""}`}
+          onClick={() => setTab("notes")}
+          disabled={isNew}
+        >
+          Notes &amp; ประวัติ
+        </button>
+      </div>
+
       {loading || !config ? (
-        <div className="grid place-items-center py-16">
-          <Spin />
+        <div className="mpanel" style={{ textAlign: "center", padding: "48px 0" }}>
+          <div className="spinner" style={{ margin: "0 auto" }} />
+        </div>
+      ) : tab === "info" ? (
+        <div className="mpanel">
+          {deal?.legacyMigrated && deal.migrationRemark && (
+            <div className="warn-banner">
+              ⚠️ ข้อมูลนี้ import จาก Excel เดิมและไม่ตรงกฎ: {deal.migrationRemark} — แก้ไขให้ตรงกฎก่อนกดบันทึก
+            </div>
+          )}
+          <div className="form-grid">
+            <FF id="departmentId" label="แผนก" required error={errors.departmentId}>
+              <select value={v.departmentId ?? ""} disabled={deptLocked} onChange={(e) => set("departmentId", e.target.value ? Number(e.target.value) : null)}>
+                <option value="">— เลือกแผนก —</option>
+                {config.departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.code} — {d.name}
+                  </option>
+                ))}
+              </select>
+            </FF>
+
+            <FF id="dealOwner" label="Deal Owner (ล็อกตามแผนก)" readonly>
+              <input value={dealOwner} disabled />
+            </FF>
+
+            <FF id="customer" label="ลูกค้า" required error={errors.customer}>
+              <input value={v.customer} onChange={(e) => set("customer", e.target.value)} />
+            </FF>
+
+            <FF id="dealType" label="Deal Type" required error={errors.dealType}>
+              <select value={v.dealType} onChange={(e) => set("dealType", e.target.value)}>
+                <option value="">— เลือก —</option>
+                {config.dealTypes.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+            </FF>
+
+            <FF id="dealName" label="Deal Name" required span2 error={errors.dealName}>
+              <textarea value={v.dealName} onChange={(e) => set("dealName", e.target.value)} />
+            </FF>
+
+            <FF id="dealStatus" label="Deal Status" required error={errors.dealStatus}>
+              <select value={v.dealStatus} onChange={(e) => set("dealStatus", e.target.value)}>
+                <option value="">— เลือก —</option>
+                {config.dealStatuses.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </FF>
+
+            <FF id="dealStage" label="Deal Stage" required error={errors.dealStage}>
+              <select value={v.dealStage} disabled={!v.dealStatus} onChange={(e) => set("dealStage", e.target.value)}>
+                <option value="">— เลือก —</option>
+                {stageOptions.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </FF>
+
+            <FF id="probability" label="Probability" required error={errors.probability || liveHint || undefined}>
+              <select value={v.probability} onChange={(e) => set("probability", e.target.value)}>
+                <option value="">— เลือก —</option>
+                {config.probabilities.map((p) => (
+                  <option key={p.probability}>{p.probability}</option>
+                ))}
+              </select>
+            </FF>
+
+            <FF id="situation" label="Situation (คำนวณอัตโนมัติ)" readonly>
+              <input value={situation} disabled />
+            </FF>
+
+            <FF id="closedDate" label="Closed Date (เดือน/ปี)" required error={errors.closedDate}>
+              <input type="month" value={v.closedDate} onChange={(e) => set("closedDate", e.target.value)} />
+            </FF>
+
+            <FF id="amount" label="Amount (บาท)" required error={errors.amount}>
+              <input
+                value={v.amount}
+                inputMode="numeric"
+                onChange={(e) => set("amount", e.target.value)}
+                onBlur={() => {
+                  const n = v.amount.replace(/,/g, "");
+                  if (/^\d+$/.test(n)) set("amount", Number(n).toLocaleString("en-US"));
+                }}
+              />
+            </FF>
+
+            <FF id="projectCode" label="รหัสโครงการ">
+              <input placeholder="ไม่บังคับ" value={v.projectCode} onChange={(e) => set("projectCode", e.target.value)} />
+            </FF>
+
+            <FF id="costSheetNo" label="Cost sheet No.">
+              <input placeholder="ไม่บังคับ" value={v.costSheetNo} onChange={(e) => set("costSheetNo", e.target.value)} />
+            </FF>
+
+            <FF
+              id="createdDate"
+              label={
+                <>
+                  Created Date <span className="req">*</span>{" "}
+                  <span className="field-today" onClick={() => set("createdDate", todayIso())}>
+                    วันนี้
+                  </span>
+                </>
+              }
+              rawLabel
+              error={errors.createdDate}
+            >
+              <input type="date" value={v.createdDate} onChange={(e) => set("createdDate", e.target.value)} />
+            </FF>
+          </div>
         </div>
       ) : (
-        <>
-          {deal?.legacyMigrated && deal.migrationRemark && (
-            <Alert
-              type="error"
-              showIcon
-              style={{ marginBottom: 16 }}
-              message="ข้อมูลนี้ import จาก Excel เดิมและไม่ตรงกฎ"
-              description={`${deal.migrationRemark} — แก้ไขให้ตรงกฎก่อนกดบันทึก`}
-            />
+        <div className="mpanel">
+          <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 4 }}>Note Timeline</div>
+          {(deal?.notes ?? []).length === 0 && (
+            <div className="cell-muted" style={{ fontSize: 13, padding: "8px 0" }}>
+              ยังไม่มี note
+            </div>
           )}
-          <Tabs
-            activeKey={tab}
-            onChange={setTab}
-            items={[
-              { key: "deal", label: "ข้อมูล Deal", children: dealTab },
-              { key: "notes", label: "Notes & ประวัติ", children: notesTab, disabled: isNew },
-            ]}
-          />
-        </>
+          {deal?.notes.map((n) => (
+            <div className="note-item" key={n.id}>
+              <div className="avatar">{n.authorName?.[0] ?? "?"}</div>
+              <div>
+                <div className="note-head">
+                  <b>{n.authorName}</b>
+                  <span>{formatDateTime(n.createdAt)}</span>
+                </div>
+                <div className="note-text">{n.text}</div>
+              </div>
+            </div>
+          ))}
+          <div className="note-compose">
+            <textarea
+              placeholder="เพิ่ม note ใหม่..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+            />
+            <button className="btn btn-primary" style={{ alignSelf: "flex-end" }} onClick={addNote} disabled={!noteText.trim()}>
+              เพิ่ม Note
+            </button>
+          </div>
+
+          <div style={{ fontSize: 12.5, fontWeight: 700, margin: "20px 0 4px" }}>ประวัติการแก้ไข (Change History)</div>
+          {(deal?.history ?? []).length === 0 && (
+            <div className="cell-muted" style={{ fontSize: 12.5, padding: "8px 0" }}>
+              ยังไม่มีประวัติการแก้ไข
+            </div>
+          )}
+          {deal?.history.map((h) => (
+            <div className="hist-row" key={h.id}>
+              <div className="hist-time">{formatDateTime(h.changedAt)}</div>
+              <div className="hist-diff">
+                {h.changedByName} แก้ <b>{h.field}</b>: <span className="from">{h.oldValue ?? "—"}</span> →{" "}
+                <span className="to">{h.newValue ?? "—"}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+
+      <div className="modal-foot">
+        <button className="btn" onClick={onClose}>
+          ยกเลิก
+        </button>
+        <button className="btn btn-primary" onClick={save} disabled={saving || loading}>
+          {saving ? "กำลังบันทึก…" : "บันทึก"}
+        </button>
+      </div>
     </Modal>
+  );
+}
+
+function FF({
+  id,
+  label,
+  required,
+  span2,
+  readonly,
+  rawLabel,
+  error,
+  children,
+}: {
+  id: string;
+  label: React.ReactNode;
+  required?: boolean;
+  span2?: boolean;
+  readonly?: boolean;
+  rawLabel?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      id={`fld-${id}`}
+      className={`form-field${span2 ? " span2" : ""}${readonly ? " readonly" : ""}${error ? " has-error" : ""}`}
+    >
+      <label>
+        {label}
+        {!rawLabel && required && <span className="req"> *</span>}
+      </label>
+      {children}
+      {error && <div className="field-err">{error}</div>}
+    </div>
   );
 }

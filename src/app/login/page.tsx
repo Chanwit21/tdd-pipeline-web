@@ -1,20 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Form, Input, Button, Card, Typography, Alert } from "antd";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const onFinish = async (v: { username: string; password: string }) => {
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      await login(v.username.trim(), v.password);
+      await login(username.trim(), password);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "เข้าสู่ระบบไม่สำเร็จ");
     } finally {
@@ -23,49 +25,80 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="grid min-h-screen place-items-center p-4"
-      style={{ background: "linear-gradient(135deg,#0f1830,#182446)" }}
-    >
-      <Card style={{ width: 360 }} styles={{ body: { padding: 28 } }}>
-        <div className="mb-6 flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--accent)] text-lg font-extrabold text-white">
-            T
-          </div>
+    <div className="login-screen">
+      <div className="login-visual">
+        <div className="login-brand">
+          <div className="brand-mark">TP</div>
           <div>
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              TDD Pipeline
-            </Typography.Title>
-            <Typography.Text type="secondary">จัดการ Sales Pipeline</Typography.Text>
+            <b>TDD Pipeline</b>
+            <span>Sales Pipeline Console</span>
           </div>
         </div>
 
-        {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}
+        <div className="login-headline">
+          <div className="eyebrow">Sales Pipeline Console</div>
+          <h2>จัดการ Sales Pipeline ทุกแผนกในที่เดียว แทน Excel ที่แก้ทับกันไม่ได้</h2>
+          <p>
+            ติดตามดีล, ตรวจสอบความสอดคล้องของข้อมูลอัตโนมัติ และดูรายงาน PR by Team, SMT QBR,
+            Pipeline by Team แบบเรียลไทม์
+          </p>
+        </div>
 
-        <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
-          <Form.Item
-            name="username"
-            label="Username"
-            rules={[{ required: true, message: "กรุณากรอก Username" }]}
-          >
-            <Input size="large" autoFocus />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            label="Password"
-            rules={[{ required: true, message: "กรุณากรอก Password" }]}
-          >
-            <Input.Password size="large" />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" size="large" block loading={busy}>
-            เข้าสู่ระบบ
-          </Button>
-        </Form>
+        <div>
+          <div className="login-stats">
+            <div className="login-stat">
+              <b className="num">8</b>
+              <span>แผนกที่ใช้งาน</span>
+            </div>
+            <div className="login-stat">
+              <b className="num">3</b>
+              <span>รายงานหลัก</span>
+            </div>
+            <div className="login-stat">
+              <b className="num">24/7</b>
+              <span>เข้าถึงได้ทุกที่</span>
+            </div>
+          </div>
+          <div className="login-foot" style={{ marginTop: 18 }}>
+            © 2569 G-ABLE-TDD · Internal Sales Operations
+          </div>
+        </div>
+      </div>
 
-        <Typography.Paragraph type="secondary" style={{ textAlign: "center", marginTop: 20, fontSize: 12 }}>
-          ตัวอย่าง: admin / admin1234 · manager.irm / manager1234
-        </Typography.Paragraph>
-      </Card>
+      <div className="login-panel">
+        <div className="login-card">
+          <h1>เข้าสู่ระบบ</h1>
+          <p className="lede">กรอกบัญชีผู้ใช้งานของคุณเพื่อเข้าใช้งาน TDD Pipeline</p>
+
+          <form className="login-form" onSubmit={submit}>
+            {error && <div className="login-error">{error}</div>}
+            <div className="form-field">
+              <label>Username</label>
+              <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="username" />
+            </div>
+            <div className="form-field">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            <button type="submit" className="btn-login" disabled={busy}>
+              {busy ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
+            </button>
+          </form>
+
+          <div className="login-divider">demo</div>
+          <div className="login-role-hint">
+            <span>
+              ตัวอย่างบัญชี: <b>admin / admin1234</b> (Admin ทุกแผนก) ·{" "}
+              <b>manager.irm / manager1234</b> (Manager แผนก IRM)
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

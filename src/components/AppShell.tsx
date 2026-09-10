@@ -1,188 +1,155 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { Layout, Menu, Avatar, Dropdown, Button, Grid } from "antd";
-import type { MenuProps } from "antd";
-import {
-  AppstoreOutlined,
-  BarsOutlined,
-  BarChartOutlined,
-  DatabaseOutlined,
-  TeamOutlined,
-  LogoutOutlined,
-  LeftOutlined,
-} from "@ant-design/icons";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-
-const { Sider, Content } = Layout;
-const { useBreakpoint } = Grid;
+import {
+  IcoDashboard,
+  IcoPipeline,
+  IcoReport,
+  IcoMaster,
+  IcoUsers,
+  IcoBell,
+  IcoChevronLeft,
+  IcoMenu,
+} from "@/components/icons";
 
 const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/pipeline": "Sales Pipeline",
-  "/reports/pr-by-team": "Report — PR by Team",
-  "/reports/smt-qbr": "Report — SMT QBR",
-  "/reports/pipeline-by-team": "Report — Pipeline by Team",
-  "/admin/users": "User Management",
+  "/reports/pr-by-team": "Report · PR by Team",
+  "/reports/smt-qbr": "Report · SMT QBR",
+  "/reports/pipeline-by-team": "Report · Pipeline by Team",
   "/admin/master-config": "Master Data",
+  "/admin/users": "User Management",
 };
+
+function initials(name?: string) {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
-  const screens = useBreakpoint();
-  const [collapsed, setCollapsed] = useState(false);
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
   const isAdmin = user?.role === "ADMIN";
 
-  const items: MenuProps["items"] = [
-    { key: "/dashboard", icon: <AppstoreOutlined />, label: "Dashboard" },
-    { key: "/pipeline", icon: <BarsOutlined />, label: "Sales Pipeline" },
-    {
-      key: "report",
-      icon: <BarChartOutlined />,
-      label: "Report",
-      children: [
-        { key: "/reports/pr-by-team", label: "PR by Team" },
-        { key: "/reports/smt-qbr", label: "SMT QBR" },
-        { key: "/reports/pipeline-by-team", label: "Pipeline by Team" },
-      ],
-    },
-    ...(isAdmin
-      ? [
-          {
-            type: "group" as const,
-            label: "จัดการระบบ",
-            children: [
-              { key: "/admin/master-config", icon: <DatabaseOutlined />, label: "Master Data" },
-              { key: "/admin/users", icon: <TeamOutlined />, label: "User Management" },
-            ],
-          },
-        ]
-      : []),
+  const nav = [
+    { href: "/dashboard", label: "Dashboard", icon: <IcoDashboard /> },
+    { href: "/pipeline", label: "Sales Pipeline", icon: <IcoPipeline /> },
+    { href: "/reports/pr-by-team", label: "Report", icon: <IcoReport />, match: "/reports" },
+  ];
+  const adminNav = [
+    { href: "/admin/master-config", label: "Master Data", icon: <IcoMaster /> },
+    { href: "/admin/users", label: "User Management", icon: <IcoUsers /> },
   ];
 
-  const selectedKey =
+  const active = (href: string, match?: string) =>
+    pathname === href || pathname.startsWith((match ?? href) + "/") || pathname === match;
+
+  const currentKey =
     Object.keys(TITLES)
       .filter((k) => pathname === k || pathname.startsWith(k + "/"))
       .sort((a, b) => b.length - a.length)[0] ?? pathname;
-  const openKey = selectedKey.startsWith("/reports/") ? ["report"] : [];
-  const currentTitle = TITLES[selectedKey] ?? "";
-
-  const sider = (
-    <Sider
-      theme="dark"
-      collapsible
-      collapsed={collapsed}
-      onCollapse={setCollapsed}
-      breakpoint="lg"
-      width={236}
-      style={{ position: "sticky", top: 0, height: "100vh", overflow: "auto" }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 16px 20px" }}>
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            flex: "none",
-            borderRadius: 10,
-            display: "grid",
-            placeItems: "center",
-            fontWeight: 800,
-            color: "#1a0e04",
-            background: "linear-gradient(135deg,#ff7a1f,#ff9c4d)",
-            boxShadow: "0 6px 16px -4px rgba(255,122,31,.55)",
-          }}
-        >
-          TP
-        </div>
-        {!collapsed && (
-          <div style={{ lineHeight: 1.25, color: "#fff" }}>
-            <div style={{ fontWeight: 700 }}>TDD Pipeline</div>
-            <div style={{ fontSize: 11, color: "#8890a8" }}>Sales Pipeline Console</div>
-          </div>
-        )}
-      </div>
-
-      <Menu
-        theme="dark"
-        mode="inline"
-        selectedKeys={[selectedKey]}
-        defaultOpenKeys={openKey}
-        items={items}
-        onClick={({ key }) => key.startsWith("/") && router.push(key)}
-      />
-    </Sider>
-  );
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const timeStr = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      {screens.lg !== false && sider}
-      <Layout>
-        <header
-          style={{
-            height: 62,
-            flex: "none",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "0 22px",
-            background: "#fff",
-            borderBottom: "1px solid var(--border)",
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
-          }}
-        >
-          {screens.lg === false ? (
-            <Button type="text" icon={<BarsOutlined />} onClick={() => router.push("/dashboard")} />
-          ) : (
-            <button
-              onClick={() => router.back()}
-              aria-label="ย้อนกลับ"
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: "50%",
-                border: "1px solid var(--border)",
-                background: "#fff",
-                cursor: "pointer",
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              <LeftOutlined style={{ fontSize: 12 }} />
-            </button>
-          )}
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
-            <span style={{ fontSize: 12, color: "#9aa1b3", fontWeight: 600 }}>TDD Pipeline</span>
-            <span style={{ color: "#9aa1b3" }}>/</span>
-            <span style={{ fontSize: 14, fontWeight: 700 }}>{currentTitle}</span>
+    <div className="app">
+      <aside className={`sidebar${open ? " open" : ""}`}>
+        <div className="sidebar-inner">
+          <div className="brand">
+            <div className="brand-mark">TP</div>
+            <div className="brand-text">
+              <b>TDD Pipeline</b>
+              <span>Sales Pipeline Console</span>
+            </div>
           </div>
 
-          <Dropdown
-            menu={{ items: [{ key: "logout", label: "ออกจากระบบ", icon: <LogoutOutlined />, onClick: logout }] }}
-          >
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-              <Avatar style={{ backgroundColor: "var(--accent)", color: "#1a0e04", fontWeight: 700 }} size="small">
-                {user?.fullName?.[0] ?? "?"}
-              </Avatar>
-              <span style={{ fontSize: 13 }} className="hidden sm:inline">
-                {user?.fullName}
-                <span style={{ color: "#9aa1b3" }}>
-                  {" · "}
-                  {isAdmin ? "Admin" : user?.departmentCode}
-                </span>
-              </span>
+          <ul className="nav">
+            {nav.map((n) => (
+              <li key={n.href}>
+                <Link
+                  href={n.href}
+                  className={`nav-item${active(n.href, n.match) ? " active" : ""}`}
+                  onClick={() => setOpen(false)}
+                >
+                  {n.icon}
+                  <span className="nav-text">{n.label}</span>
+                </Link>
+              </li>
+            ))}
+
+            {isAdmin && (
+              <>
+                <div className="nav-label">จัดการระบบ</div>
+                {adminNav.map((n) => (
+                  <li key={n.href}>
+                    <Link
+                      href={n.href}
+                      className={`nav-item${active(n.href) ? " active" : ""}`}
+                      onClick={() => setOpen(false)}
+                    >
+                      {n.icon}
+                      <span className="nav-text">{n.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </>
+            )}
+          </ul>
+
+          <div className="sidebar-footer">
+            <div className="role-pill">
+              <div className="avatar">{initials(user?.fullName)}</div>
+              <div className="role-pill-text">
+                <b>{user?.fullName}</b>
+                <span>{isAdmin ? "Admin · ทุกแผนก" : `Manager · ${user?.departmentCode ?? ""}`}</span>
+              </div>
             </div>
-          </Dropdown>
+            <button className="sidebar-logout" onClick={logout}>
+              ออกจากระบบ
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <button className="crumb-back topbar-menu" onClick={() => setOpen((o) => !o)} aria-label="เมนู">
+            <IcoMenu size={14} />
+          </button>
+          <button
+            className="crumb-back"
+            onClick={() => (window.history.length > 1 ? router.back() : router.push("/dashboard"))}
+            aria-label="ย้อนกลับ"
+          >
+            <IcoChevronLeft size={14} />
+          </button>
+          <div className="breadcrumb">
+            <span className="crumb-root">TDD Pipeline</span>
+            <span className="crumb-sep">/</span>
+            <span className="crumb-current">{TITLES[currentKey] ?? ""}</span>
+          </div>
+          <div className="topbar-right">
+            <div className="clock">
+              <b>{dateStr}</b>
+              <span>เวลา {timeStr} น.</span>
+            </div>
+            <div className="bell">
+              <IcoBell size={16} />
+              <span className="dot" />
+            </div>
+          </div>
         </header>
 
-        <Content style={{ padding: "22px 26px 60px" }}>
-          <div style={{ maxWidth: 1280, marginInline: "auto" }}>{children}</div>
-        </Content>
-      </Layout>
-    </Layout>
+        <main className="content">{children}</main>
+      </div>
+    </div>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Spin } from "antd";
 import { useAuth } from "@/lib/auth";
+import { CenterSpinner } from "@/components/ui";
 
 export default function IndexPage() {
   const { user, loading } = useAuth();
@@ -14,9 +14,5 @@ export default function IndexPage() {
     router.replace(user ? "/dashboard" : "/login");
   }, [user, loading, router]);
 
-  return (
-    <div className="grid h-screen place-items-center">
-      <Spin size="large" />
-    </div>
-  );
+  return <CenterSpinner />;
 }

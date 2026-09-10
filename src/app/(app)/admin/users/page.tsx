@@ -1,86 +1,69 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, Select, Switch, Tag, Space, Popconfirm } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
-import { PageHeader } from "@/components/PageHeader";
 import { api, ApiError } from "@/lib/api";
 import { useMasterConfig } from "@/lib/hooks";
-import { useToast } from "@/lib/toast";
+import { useToast } from "@/components/Toast";
+import { PageHead, Modal, Badge } from "@/components/ui";
 import type { AdminUser, FieldError } from "@/lib/types";
 
-type FormShape = {
+interface FormState {
+  id: number | null;
   username: string;
   fullName: string;
-  password?: string;
+  password: string;
   role: "MANAGER" | "ADMIN";
-  departmentId?: number;
+  departmentId: number | null;
   active: boolean;
+}
+
+const EMPTY: FormState = {
+  id: null,
+  username: "",
+  fullName: "",
+  password: "",
+  role: "MANAGER",
+  departmentId: null,
+  active: true,
 };
 
 export default function UserManagementPage() {
   const { config } = useMasterConfig();
   const toast = useToast();
-  const [form] = Form.useForm<FormShape>();
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<AdminUser | null>(null);
-  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<FormState | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const role = Form.useWatch("role", form);
 
-  const load = () => {
-    setLoading(true);
-    api<AdminUser[]>("/api/admin/users")
-      .then(setUsers)
-      .finally(() => setLoading(false));
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, []);
+  const load = () => api<AdminUser[]>("/api/admin/users").then(setUsers);
+  useEffect(() => {
+    load();
+  }, []);
 
-  function openNew() {
-    setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({ role: "MANAGER", active: true });
-    setOpen(true);
-  }
-  function openEdit(u: AdminUser) {
-    setEditing(u);
-    form.resetFields();
-    form.setFieldsValue({
-      username: u.username,
-      fullName: u.fullName,
-      role: u.role,
-      departmentId: u.departmentId ?? undefined,
-      active: u.active,
-    });
-    setOpen(true);
-  }
-
-  async function submit() {
-    const v = await form.validateFields();
+  async function save() {
+    if (!form) return;
     setSaving(true);
+    setErrors({});
     try {
       const body = {
-        username: v.username,
-        fullName: v.fullName,
-        password: v.password || null,
-        role: v.role,
-        departmentId: v.role === "MANAGER" ? v.departmentId : null,
-        active: v.active,
+        username: form.username,
+        fullName: form.fullName,
+        password: form.password || null,
+        role: form.role,
+        departmentId: form.role === "MANAGER" ? form.departmentId : null,
+        active: form.active,
       };
-      if (editing) await api(`/api/admin/users/${editing.id}`, { method: "PUT", body });
+      if (form.id) await api(`/api/admin/users/${form.id}`, { method: "PUT", body });
       else await api("/api/admin/users", { method: "POST", body });
       toast.push("บันทึกผู้ใช้สำเร็จ", "success");
-      setOpen(false);
+      setForm(null);
       load();
     } catch (e) {
       if (e instanceof ApiError && e.errors.length) {
-        form.setFields(
-          (e.errors as FieldError[])
-            .filter((x) => x.field)
-            .map((x) => ({ name: x.field as string, errors: [x.message] })) as never,
-        );
+        const map: Record<string, string> = {};
+        (e.errors as FieldError[]).forEach((x) => x.field && (map[x.field] = x.message));
+        setErrors(map);
+        toast.push("ตรวจสอบข้อมูลในฟอร์ม", "error");
       } else {
         toast.push(e instanceof ApiError ? e.message : "บันทึกไม่สำเร็จ", "error");
       }
@@ -99,102 +82,165 @@ export default function UserManagementPage() {
   }
 
   return (
-    <Space direction="vertical" size={18} style={{ width: "100%" }}>
-      <PageHeader
+    <div className="stack">
+      <PageHead
         title="User Management"
-        subtitle="1 Manager ต่อ 1 แผนก · Admin ไม่ผูกแผนก"
+        subtitle="จัดการบัญชีผู้ใช้งานและผูก Manager เข้ากับแผนก"
         actions={
-          <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
-            เพิ่มผู้ใช้
-          </Button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setErrors({});
+              setForm(EMPTY);
+            }}
+          >
+            + เพิ่มผู้ใช้งาน
+          </button>
         }
       />
 
-      <Table<AdminUser>
-        rowKey="id"
-        loading={loading}
-        dataSource={users}
-        pagination={false}
-        columns={[
-          { title: "Username", dataIndex: "username" },
-          { title: "ชื่อ-นามสกุล", dataIndex: "fullName" },
-          {
-            title: "Role",
-            dataIndex: "role",
-            render: (v) => <Tag color={v === "ADMIN" ? "blue" : "orange"}>{v}</Tag>,
-          },
-          { title: "แผนก", dataIndex: "departmentCode", render: (v) => v ?? "—" },
-          {
-            title: "สถานะ",
-            dataIndex: "active",
-            render: (v) => <Tag color={v ? "success" : "default"}>{v ? "Active" : "Inactive"}</Tag>,
-          },
-          {
-            title: "",
-            key: "action",
-            align: "right",
-            render: (_, u) => (
-              <Space>
-                <Button type="link" size="small" onClick={() => openEdit(u)}>
-                  แก้ไข
-                </Button>
-                <Popconfirm
-                  title={u.active ? "ปิดใช้งานผู้ใช้นี้?" : "เปิดใช้งานผู้ใช้นี้?"}
-                  onConfirm={() => toggleActive(u)}
-                >
-                  <Button type="link" size="small">
-                    {u.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
-                  </Button>
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]}
-      />
+      <div className="panel">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th className="col-no">No.</th>
+                <th>Username</th>
+                <th>ชื่อ-นามสกุล</th>
+                <th>Role</th>
+                <th>แผนก</th>
+                <th>สถานะ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u, i) => (
+                <tr key={u.id}>
+                  <td className="col-no">{i + 1}</td>
+                  <td className="cell-strong">{u.username}</td>
+                  <td>{u.fullName}</td>
+                  <td>
+                    <Badge tone={u.role === "ADMIN" ? "accent" : "info"}>{u.role}</Badge>
+                  </td>
+                  <td>{u.departmentCode ? <Badge tone="slate">{u.departmentCode}</Badge> : <span className="cell-muted">ทุกแผนก</span>}</td>
+                  <td>
+                    <Badge tone={u.active ? "success" : "slate"}>{u.active ? "Active" : "Inactive"}</Badge>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <button
+                      className="linkbtn"
+                      style={{ marginRight: 14 }}
+                      onClick={() => {
+                        setErrors({});
+                        setForm({
+                          id: u.id,
+                          username: u.username,
+                          fullName: u.fullName,
+                          password: "",
+                          role: u.role,
+                          departmentId: u.departmentId,
+                          active: u.active,
+                        });
+                      }}
+                    >
+                      แก้ไข
+                    </button>
+                    <button className="linkbtn" style={{ color: "var(--text-muted)" }} onClick={() => toggleActive(u)}>
+                      {u.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="table-foot">
+          <span>แสดง {users.length} รายการ</span>
+        </div>
+      </div>
 
-      <Modal
-        open={open}
-        title={editing ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้"}
-        onCancel={() => setOpen(false)}
-        onOk={submit}
-        confirmLoading={saving}
-        okText="บันทึก"
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical" requiredMark>
-          <Form.Item name="username" label="Username" rules={[{ required: true, message: "กรุณากรอก Username" }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="fullName" label="ชื่อ-นามสกุล" rules={[{ required: true, message: "กรุณากรอกชื่อ-นามสกุล" }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            label={editing ? "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)" : "รหัสผ่าน (≥ 8 ตัว)"}
-            rules={editing ? [] : [{ required: true, min: 8, message: "อย่างน้อย 8 ตัวอักษร" }]}
-          >
-            <Input.Password />
-          </Form.Item>
-          <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-            <Select
-              options={[
-                { value: "MANAGER", label: "MANAGER" },
-                { value: "ADMIN", label: "ADMIN" },
-              ]}
-            />
-          </Form.Item>
-          {role === "MANAGER" && (
-            <Form.Item name="departmentId" label="แผนก" rules={[{ required: true, message: "กรุณาเลือกแผนก" }]}>
-              <Select
-                options={config?.departments.map((d) => ({ value: d.id, label: `${d.code} — ${d.name}` }))}
-              />
-            </Form.Item>
-          )}
-          <Form.Item name="active" label="Active" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-        </Form>
+      <Modal open={form !== null} onClose={() => setForm(null)} width={520}>
+        {form && (
+          <>
+            <div className="modal-head">
+              <h3>{form.id ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้งาน"}</h3>
+              <button className="icon-x" onClick={() => setForm(null)}>
+                ✕
+              </button>
+            </div>
+            <div className="mpanel">
+              <div className="form-grid" style={{ gridTemplateColumns: "1fr" }}>
+                <UF label="Username" error={errors.username}>
+                  <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+                </UF>
+                <UF label="ชื่อ-นามสกุล" error={errors.fullName}>
+                  <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+                </UF>
+                <UF
+                  label={form.id ? "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)" : "รหัสผ่าน (≥ 8 ตัว)"}
+                  error={errors.password}
+                >
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  />
+                </UF>
+                <UF label="Role" error={errors.role}>
+                  <select
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value as FormState["role"] })}
+                  >
+                    <option value="MANAGER">MANAGER</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                </UF>
+                {form.role === "MANAGER" && (
+                  <UF label="แผนก" error={errors.departmentId}>
+                    <select
+                      value={form.departmentId ?? ""}
+                      onChange={(e) => setForm({ ...form, departmentId: e.target.value ? Number(e.target.value) : null })}
+                    >
+                      <option value="">— เลือกแผนก —</option>
+                      {config?.departments.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.code} — {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </UF>
+                )}
+                <label className="check" style={{ padding: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={form.active}
+                    onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                  />
+                  Active
+                </label>
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button className="btn" onClick={() => setForm(null)}>
+                ยกเลิก
+              </button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>
+                บันทึก
+              </button>
+            </div>
+          </>
+        )}
       </Modal>
-    </Space>
+    </div>
+  );
+}
+
+function UF({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <div className={`form-field${error ? " has-error" : ""}`}>
+      <label>{label}</label>
+      {children}
+      {error && <div className="field-err">{error}</div>}
+    </div>
   );
 }
