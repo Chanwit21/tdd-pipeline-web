@@ -124,17 +124,14 @@ export function ReportPage({ report }: { report: ReportKey }) {
           <div className="panel">
             <div
               className="filter-grid"
-              style={{
-                gridTemplateColumns: `repeat(${fields.length + 1}, minmax(0, 200px))`,
-                paddingBottom: 16,
-              }}
+              style={{ gridTemplateColumns: `repeat(${fields.length}, minmax(0, 190px))` }}
             >
               {fields}
-              <Field label={" "}>
-                <button className="btn btn-primary btn-sm" onClick={() => setTick((t) => t + 1)}>
-                  Refresh
-                </button>
-              </Field>
+            </div>
+            <div className="filter-actions">
+              <button className="btn btn-primary btn-sm" onClick={() => setTick((t) => t + 1)}>
+                Refresh
+              </button>
             </div>
             <ReportTable data={data} loading={loading} />
           </div>
