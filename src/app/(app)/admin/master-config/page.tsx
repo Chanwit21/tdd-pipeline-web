@@ -33,6 +33,14 @@ export default function MasterConfigPage() {
     try { await api(`/api/admin/master-config/${pendingDelete.kind}/${pendingDelete.id}`, {method:"DELETE"}); invalidateMasterConfig(); await load(); setPendingDelete(null); }
     catch(e) { setError(e instanceof Error ? e.message : "ลบไม่สำเร็จ"); } finally { setBusy(false); }
   }
+  async function unmapStage(stage: { id: number; name: string; allowedFor: string[] }, status: string) {
+    setBusy(true); setError("");
+    try {
+      await api("/api/admin/master-config/stages", { method: "POST", body: { id: stage.id, name: stage.name, allowedFor: stage.allowedFor.filter(s => s !== status) } });
+      invalidateMasterConfig(); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "แก้ไขไม่สำเร็จ"); }
+    finally { setBusy(false); }
+  }
   async function saveRule() {
     if (!ruleEdit) return; setBusy(true); setError("");
     try { await api("/api/admin/master-config/rules", {method:"PUT", body:{key:ruleEdit==="wonProbability"?"XREF_WON_PROBABILITY":"XREF_PO_PROBABILITY", value:ruleValue}}); invalidateMasterConfig(); await load(); setRuleEdit(null); toast.push("บันทึกกฎสำเร็จ", "success"); }
@@ -56,7 +64,7 @@ export default function MasterConfigPage() {
         {sub === "stage" && <>
           <div className="master-actions" style={{justifyContent:"flex-end",marginBottom:10}}><button className="btn btn-primary btn-sm" onClick={()=>open("stages")}>+ เพิ่ม Deal Stage</button></div>
           <div className="rule-line"><b style={{width:120}}>Deal Status</b><span className="arrow">→</span><b>Deal Stage ที่เลือกได้</b></div>
-          {config.dealStatuses.map(status=><div className="rule-line" key={status}><b style={{width:120,flexShrink:0}}>{status}</b><span className="arrow">→</span><div className="chiprow">{config.dealStages.filter(s=>s.allowedFor.includes(status)).map(s=><span className="chip" key={s.id}><button className="linkbtn" onClick={()=>open("stages",s)}>{s.name}</button><button className="rowbtn" title={`ลบ ${s.name}`} aria-label={`ลบ ${s.name}`} onClick={()=>{setError("");setPendingDelete({kind:"stages",id:s.id,name:s.name});}}>×</button></span>)}</div></div>)}
+          {config.dealStatuses.map(status=><div className="rule-line" key={status}><b style={{width:120,flexShrink:0}}>{status}</b><span className="arrow">→</span><div className="chiprow">{config.dealStages.filter(s=>s.allowedFor.includes(status)).map(s=><span className="chip" key={s.id}><button className="linkbtn" onClick={()=>open("stages",s)}>{s.name}</button><button className="rowbtn" title={`ลบ ${s.name}`} aria-label={`ลบ ${s.name}`} onClick={()=>unmapStage(s,status)}>×</button></span>)}</div></div>)}
         </>}
         {sub === "prob" && <>
           <div className="subsection-head">Probability → Situation</div>
