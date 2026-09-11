@@ -78,3 +78,38 @@ export const IcoMenu = ({ size }: P) => (
     <path d="M4 6h16M4 12h16M4 18h16" />
   </svg>
 );
+export const IcoClose = ({ size }: P) => (
+  <svg {...s(size)} strokeWidth={2.4}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+);
+export const IcoEdit = ({ size }: P) => (
+  <svg {...s(size)}>
+    <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+    <path d="M13.5 6.5l4 4" />
+  </svg>
+);
+export const IcoCheck = ({ size }: P) => (
+  <svg {...s(size)} strokeWidth={2.6}>
+    <path d="M4 12.5l5 5L20 6" />
+  </svg>
+);
+export const IcoAlertTriangle = ({ size }: P) => (
+  <svg {...s(size)}>
+    <path d="M12 4 2.5 20h19L12 4Z" />
+    <path d="M12 10v4" />
+    <path d="M12 17.5h.01" />
+  </svg>
+);
+export const IcoSearch = ({ size }: P) => (
+  <svg {...s(size)}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </svg>
+);
+export const IcoAward = ({ size }: P) => (
+  <svg {...s(size)}>
+    <circle cx="12" cy="8" r="5.5" />
+    <path d="M8.5 13 7 21l5-2.5L17 21l-1.5-8" />
+  </svg>
+);

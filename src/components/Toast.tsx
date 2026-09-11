@@ -21,7 +21,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={context}>
       {children}
-      <div className="toast-wrap">
+      <div className="toast-wrap" role="status" aria-live="polite" aria-atomic="true">
         {items.map((t) => (
           <div key={t.id} className={`toast ${t.kind}`}>
             {t.text}
