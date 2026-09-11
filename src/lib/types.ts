@@ -21,8 +21,8 @@ export interface MasterConfig {
   dealTypes: string[];
   dealStatuses: string[];
   dealStages: { id: number; name: string; allowedFor: string[] }[];
-  typeOptions: { id: number; name: string }[];
-  statusOptions: { id: number; name: string }[];
+  typeOptions: { id: number; name: string; status: "ACTIVE" | "INACTIVE" | "ARCHIVED" }[];
+  statusOptions: { id: number; name: string; status: "ACTIVE" | "INACTIVE" | "ARCHIVED" }[];
   probabilities: { probability: string; situation: string }[];
   rules: { wonProbability: string; poProbability: string };
 }
