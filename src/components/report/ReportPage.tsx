@@ -39,7 +39,10 @@ export function ReportPage({ report }: { report: ReportKey }) {
     <PageHead title="Report" subtitle={DESC[report]} />
     <Subtabs value={report} onChange={r => router.push(`/reports/${r}`)} items={TABS} style={{ marginBottom: 16 }} />
     <div className="panel">
-      <div className="filter-grid report-filters">
+      <form
+        className="filter-grid report-filters"
+        onSubmit={(e) => { e.preventDefault(); if (/^\d{4}$/.test(draft.year)) { setFilters(draft); setTick(t => t + 1); } }}
+      >
         <Field label="ปี (Closed Date)"><input type="number" min="1900" max="9999" value={draft.year} onChange={e => setDraft({ ...draft, year: e.target.value })} /></Field>
         {admin && <Field label="Department"><MultiCheckbox label="Department" value={draft.departmentId} onChange={v => setDraft({ ...draft, departmentId: v })} options={(config?.departments ?? []).map(d => ({ value: String(d.id), label: d.code }))} /></Field>}
         {report !== "pr-by-team" && <Field label="Deal Status"><MultiCheckbox label="Deal Status" value={draft.dealStatus} onChange={v => setDraft({ ...draft, dealStatus: v })} options={(config?.dealStatuses ?? []).map(s => ({ value: s, label: s }))} /></Field>}
@@ -48,11 +51,11 @@ export function ReportPage({ report }: { report: ReportKey }) {
           <Field label="Deal Stage"><MultiCheckbox label="Deal Stage" value={draft.dealStage} onChange={v => setDraft({ ...draft, dealStage: v })} options={(config?.dealStages ?? []).map(s => ({ value: s.name, label: s.name }))} /></Field>
         </>}
         <div className="filter-buttons">
-          <button className="btn btn-primary btn-sm" disabled={!/^\d{4}$/.test(draft.year)} onClick={() => { setFilters(draft); setTick(t => t + 1); }}>Refresh</button>
-          <button className="btn btn-sm" disabled={loading || !data} onClick={exportReport}>↓ Export</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => { setDraft(INITIAL); setFilters(INITIAL); }}>ล้างค่า</button>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={!/^\d{4}$/.test(draft.year)}>Refresh</button>
+          <button type="button" className="btn btn-sm" disabled={loading || !data} onClick={exportReport}>↓ Export</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDraft(INITIAL); setFilters(INITIAL); }}>ล้างค่า</button>
         </div>
-      </div>
+      </form>
       {error && <div className="warn-banner" role="alert">{error}</div>}
       <div className="table-wrap" style={{ padding: "0 18px 18px" }}><table className="pivot">
         <thead><tr><th className="col-no">No.</th><th>{data?.rowHeader ?? "Department"}</th>{data?.columns.map(c => <th key={c}>{c}</th>)}<th>Grand Total</th></tr></thead>

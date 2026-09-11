@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { IcoFilter } from "@/components/icons";
 
 /* ---------- PageHead ---------- */
@@ -61,20 +61,39 @@ export function FilterBar({
   cols,
   children,
   actions,
+  onSubmit,
 }: {
   title?: string;
   cols?: 4 | 5 | 6;
   embedded?: boolean;
   children: React.ReactNode;
   actions?: React.ReactNode;
+  /** Wraps the fields+actions in a <form>, so pressing Enter in any field triggers this (same as clicking the primary action). */
+  onSubmit?: () => void;
 }) {
+  const body = (
+    <>
+      <div className={`filter-grid${cols ? ` cols-${cols}` : ""}`}>{children}</div>
+      {actions && <div className="filter-actions">{actions}</div>}
+    </>
+  );
   return (
     <div className={embedded ? "filter-section" : "panel"}>
       <div className="filter-title">
         <IcoFilter size={14} /> {title}
       </div>
-      <div className={`filter-grid${cols ? ` cols-${cols}` : ""}`}>{children}</div>
-      {actions && <div className="filter-actions">{actions}</div>}
+      {onSubmit ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit();
+          }}
+        >
+          {body}
+        </form>
+      ) : (
+        body
+      )}
     </div>
   );
 }
@@ -155,11 +174,11 @@ export function Pager({
   const tp = Math.max(totalPages, 1);
   return (
     <div className="pager">
-      <button disabled={page <= 1} onClick={() => onPage(page - 1)}>
+      <button aria-label="หน้าก่อนหน้า" disabled={page <= 1} onClick={() => onPage(page - 1)}>
         ‹
       </button>
-      <button className="on">{page}</button>
-      <button disabled={page >= tp} onClick={() => onPage(page + 1)}>
+      <button className="on" aria-current="page">{page}</button>
+      <button aria-label="หน้าถัดไป" disabled={page >= tp} onClick={() => onPage(page + 1)}>
         ›
       </button>
     </div>
@@ -194,6 +213,8 @@ export function Subtabs<T extends string>({
 }
 
 /* ---------- Modal ---------- */
+const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({
   open,
   onClose,
@@ -205,21 +226,65 @@ export function Modal({
   children: React.ReactNode;
   width?: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const restoreFocus = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
+    // Depends only on `open` (not `onClose`, which callers pass as a fresh inline
+    // function on every render): otherwise this effect would tear down and rebuild
+    // on every keystroke inside the modal, breaking the focus trap mid-interaction.
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    restoreFocus.current = document.activeElement as HTMLElement | null;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      if (e.key === "Tab" && ref.current) {
+        const list = Array.from(ref.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (!list.length) return;
+        const first = list[0];
+        const last = list[list.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+
+    const focusTimer = window.setTimeout(() => {
+      const firstFocusable = ref.current?.querySelector<HTMLElement>(FOCUSABLE);
+      (firstFocusable ?? ref.current)?.focus();
+    }, 0);
+
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      window.clearTimeout(focusTimer);
+      restoreFocus.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal" style={width ? { maxWidth: width } : undefined} onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="modal"
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        style={width ? { maxWidth: width } : undefined}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         {children}
       </div>
     </div>

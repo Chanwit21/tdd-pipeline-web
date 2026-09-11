@@ -8,6 +8,7 @@ import { formatAmount, formatMonth } from "@/lib/format";
 import { downloadCsv } from "@/lib/export";
 import { PageHead, Panel, Field, Select, Badge } from "@/components/ui";
 import { MultiCheckbox } from "@/components/MultiCheckbox";
+import { IcoDownload } from "@/components/icons";
 interface Summary {
   statCards: { totalPipelineAmount: number; bestCaseAmount: number; wonAmount: number; activeDealCount: number };
   overdue: { id: number; recordId: string; customer: string; dealName: string; department: string; dealOwner: string; closedDate: string; amount: number }[];
@@ -37,17 +38,21 @@ export default function DashboardPage() {
   }
   const s = data?.statCards;
   return <div className="stack">
-    <PageHead title="Dashboard" subtitle={user?.role === "ADMIN" ? "ภาพรวม Sales Pipeline ทุกแผนก" : `ภาพรวม Sales Pipeline แผนก ${user?.departmentCode}`} actions={<button className="btn" disabled={loading || !data} onClick={exportSummary}>↓ Export สรุป</button>} />
+    <PageHead title="Dashboard" subtitle={user?.role === "ADMIN" ? "ภาพรวม Sales Pipeline ทุกแผนก" : `ภาพรวม Sales Pipeline แผนก ${user?.departmentCode}`} actions={<button className="btn" disabled={loading || !data} onClick={exportSummary}><IcoDownload size={14} /> Export สรุป</button>} />
     <div className="panel">
       <div className="filter-title">ตัวกรอง Dashboard</div>
-      <div className="filter-grid report-filters" style={{ paddingBottom: 18 }}>
+      <form
+        className="filter-grid report-filters"
+        style={{ paddingBottom: 18 }}
+        onSubmit={(e) => { e.preventDefault(); if (!(!!draft.createdYear && !/^\d{4}$/.test(draft.createdYear))) setFilters(draft); }}
+      >
         {user?.role === "ADMIN" && <Field label="Department"><MultiCheckbox label="Department" value={draft.departmentId} onChange={v => setDraft({ ...draft, departmentId: v })} options={(config?.departments ?? []).map(d => ({ value: String(d.id), label: d.code }))} /></Field>}
         <Field label="Deal Status"><MultiCheckbox label="Deal Status" value={draft.dealStatus} onChange={v => setDraft({ ...draft, dealStatus: v })} options={(config?.dealStatuses ?? []).map(s => ({ value: s, label: s }))} /></Field>
         <Field label="Probability"><MultiCheckbox label="Probability" value={draft.probability} onChange={v => setDraft({ ...draft, probability: v })} options={(config?.probabilities ?? []).map(p => ({ value: p.probability, label: p.probability }))} /></Field>
         <Field label="ปีที่สร้าง (Created Date)"><input type="number" min="1900" max="9999" placeholder="ทุกปี" value={draft.createdYear} onChange={e => setDraft({ ...draft, createdYear: e.target.value })} /></Field>
         <Field label="ไตรมาสที่สร้าง"><Select value={draft.quarter} onChange={v => setDraft({ ...draft, quarter: v })} all="ทุกไตรมาส" options={[1,2,3,4].map(q => ({ value: String(q), label: `Q${q}` }))} /></Field>
-        <div className="filter-buttons"><button className="btn btn-primary btn-sm" disabled={!!draft.createdYear && !/^\d{4}$/.test(draft.createdYear)} onClick={() => setFilters(draft)}>กรอง</button><button className="btn btn-ghost btn-sm" onClick={() => { setDraft(INITIAL); setFilters(INITIAL); }}>ล้างค่า</button></div>
-      </div>
+        <div className="filter-buttons"><button type="submit" className="btn btn-primary btn-sm" disabled={!!draft.createdYear && !/^\d{4}$/.test(draft.createdYear)}>กรอง</button><button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDraft(INITIAL); setFilters(INITIAL); }}>ล้างค่า</button></div>
+      </form>
     </div>
     {error && <div className="warn-banner" role="alert">{error}</div>}
     {loading ? <div className="panel panel-body">กำลังโหลด…</div> : <>
@@ -80,3 +85,4 @@ export default function DashboardPage() {
   </div>;
 }
 function Kpi({label,value,sub,icon,tone}:{label:string;value:string;sub:string;icon:string;tone:string}) { return <div className="kpi-card"><div className="kpi-top"><span>{label}</span><div className="kpi-ico" aria-hidden="true" style={{background:`var(--${tone}-weak)`,color:`var(--${tone})`}}>{icon}</div></div><div className="kpi-val num">{value}</div><div className="kpi-sub">{sub}</div></div>; }
+
