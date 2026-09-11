@@ -299,20 +299,3 @@ export function CenterSpinner() {
     </div>
   );
 }
-
-/** Placeholder table rows that reserve real row height, so a table doesn't collapse to a single line while loading. */
-export function SkeletonRows({ cols, rows = 5 }: { cols: number; rows?: number }) {
-  return (
-    <>
-      {Array.from({ length: rows }).map((_, r) => (
-        <tr className="skel-row" key={r} aria-hidden="true">
-          {Array.from({ length: cols }).map((__, c) => (
-            <td key={c}>
-              <span className="skel" style={{ width: `${55 + ((r * 13 + c * 29) % 40)}%` }} />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </>
-  );
-}
