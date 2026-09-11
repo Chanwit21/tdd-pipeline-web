@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useMasterConfig } from "@/lib/hooks";
 import { useToast } from "@/components/Toast";
@@ -180,13 +180,14 @@ export default function UserManagementPage() {
             </div>
             <div className="mpanel">
               <div className="form-grid" style={{ gridTemplateColumns: "1fr" }}>
-                <UF label="Username" error={errors.username}>
+                <UF id="username" label="Username" error={errors.username}>
                   <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
                 </UF>
-                <UF label="ชื่อ-นามสกุล" error={errors.fullName}>
+                <UF id="fullName" label="ชื่อ-นามสกุล" error={errors.fullName}>
                   <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
                 </UF>
                 <UF
+                  id="password"
                   label={form.id ? "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)" : "รหัสผ่าน (≥ 8 ตัว)"}
                   error={errors.password}
                 >
@@ -196,7 +197,7 @@ export default function UserManagementPage() {
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                   />
                 </UF>
-                <UF label="Role" error={errors.role}>
+                <UF id="role" label="Role" error={errors.role}>
                   <select
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value as FormState["role"] })}
@@ -206,7 +207,7 @@ export default function UserManagementPage() {
                   </select>
                 </UF>
                 {form.role === "MANAGER" && (
-                  <UF label="แผนก" error={errors.departmentId}>
+                  <UF id="departmentId" label="แผนก" error={errors.departmentId}>
                     <select
                       value={form.departmentId ?? ""}
                       onChange={(e) => setForm({ ...form, departmentId: e.target.value ? Number(e.target.value) : null })}
@@ -245,12 +246,24 @@ export default function UserManagementPage() {
   );
 }
 
-function UF({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function UF({ id, label, error, children }: { id: string; label: string; error?: string; children: React.ReactNode }) {
+  const errId = `${id}-err`;
+  const control =
+    error && isValidElement(children)
+      ? cloneElement(children as React.ReactElement<{ "aria-describedby"?: string; "aria-invalid"?: boolean }>, {
+          "aria-describedby": errId,
+          "aria-invalid": true,
+        })
+      : children;
   return (
     <div className={`form-field${error ? " has-error" : ""}`}>
       <label>{label}</label>
-      {children}
-      {error && <div className="field-err">{error}</div>}
+      {control}
+      {error && (
+        <div className="field-err" id={errId}>
+          {error}
+        </div>
+      )}
     </div>
   );
 }
