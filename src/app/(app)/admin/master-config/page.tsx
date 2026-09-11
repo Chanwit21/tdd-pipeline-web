@@ -72,7 +72,7 @@ export default function MasterConfigPage() {
         {sub === "stage" && <>
           <div className="master-actions" style={{justifyContent:"flex-end",marginBottom:10}}><button className="btn btn-primary btn-sm" onClick={()=>open("stages")}>+ เพิ่ม Deal Stage</button></div>
           <div className="rule-line"><b style={{width:120}}>Deal Status</b><span className="arrow">→</span><b>Deal Stage ที่เลือกได้</b></div>
-          {config.dealStatuses.map(status=><div className="rule-line" key={status}><b style={{width:120,flexShrink:0}}>{status}</b><span className="arrow">→</span><div className="chiprow">{config.dealStages.filter(s=>s.allowedFor.includes(status)).map(s=><span className="chip" key={s.id}><button className="linkbtn" onClick={()=>open("stages",s)}>{s.name}</button><button className="rowbtn" title={`ลบ ${s.name}`} aria-label={`ลบ ${s.name}`} onClick={()=>unmapStage(s,status)}>×</button></span>)}</div></div>)}
+          {config.dealStatuses.map(status=><div className="rule-line" key={status}><b style={{width:120,flexShrink:0}}>{status}</b><span className="arrow">→</span><div className="chiprow">{config.dealStages.filter(s=>s.allowedFor.includes(status)).map(s=><span className="chip" key={s.id}><button className="linkbtn" onClick={()=>open("stages",s)}>{s.name}</button><button className="rowbtn" title={`ถอด ${s.name}`} aria-label={`ถอด ${s.name}`} onClick={()=>unmapStage(s,status)}>×</button></span>)}</div></div>)}
         </>}
         {sub === "prob" && <>
           <div className="subsection-head">Probability → Situation</div>

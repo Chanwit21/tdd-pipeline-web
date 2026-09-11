@@ -36,6 +36,12 @@ export function ReportPage({ report }: { report: ReportKey }) {
     } }).then(d => { if (current) setData(d); }).catch(e => { if (current) { setError(e.message); setData(null); } }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, [report, filters, tick, admin]);
+  useEffect(() => {
+    if (!closedYears.length || closedYears.some(y => String(y) === draft.year)) return;
+    const y = String(closedYears[0]);
+    setDraft(d => ({ ...d, year: y }));
+    setFilters(f => ({ ...f, year: y }));
+  }, [closedYears, draft.year]);
   function exportReport() {
     if (!data) return;
     const rows: unknown[][] = [["No.", data.rowHeader, ...data.columns, "Grand Total"], ...data.rows.map((r, i) => [i + 1, r.label, ...data.columns.map(c => r.values[c]), r.total])];
