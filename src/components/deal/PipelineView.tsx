@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMasterConfig } from "@/lib/hooks";
 import { formatAmount, formatMonth, formatDate } from "@/lib/format";
-import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
-import { IcoPipeline, IcoPlus } from "@/components/icons";
+import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager, SkeletonRows } from "@/components/ui";
+import { IcoPipeline, IcoPlus, IcoDownload, IcoSearch, IcoEdit } from "@/components/icons";
 import { DealFormModal } from "@/components/deal/DealFormModal";
 import { MultiCheckbox } from "@/components/MultiCheckbox";
 import { downloadCsv } from "@/lib/export";
@@ -43,11 +43,13 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   const toast = useToast();
   const [exporting, setExporting] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
+  const requestId = useRef(0);
   const query = {
     ...filters, departmentId: isAdmin ? filters.departmentId : undefined,
     probability: filters.probability || undefined, createdYear: filters.createdYear || undefined,
   };
   const load = useCallback(() => {
+    const id = ++requestId.current;
     setLoading(true);
     api<Page<Deal>>("/api/deals", {
       query: {
@@ -64,12 +66,14 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         size,
       },
     })
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, [isAdmin, filters, page, size]);
+      .then(result => { if (id === requestId.current) setData(result); })
+      .catch(e => { if (id === requestId.current) { setData(null); toast.push(e.message || "โหลดข้อมูลไม่สำเร็จ", "error"); } })
+      .finally(() => { if (id === requestId.current) setLoading(false); });
+  }, [isAdmin, filters, page, size, toast]);
 
   useEffect(() => {
     load();
+    return () => { requestId.current++; };
   }, [load]);
 
   const counts = useMemo(() => {
@@ -87,6 +91,12 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   function apply() {
     setPage(1);
     setFilters(draft);
+    setSelected([]);
+  }
+  function selectStatus(statuses: string[]) {
+    setDraft((d) => ({ ...d, dealStatus: statuses }));
+    setFilters((f) => ({ ...f, dealStatus: statuses }));
+    setPage(1);
     setSelected([]);
   }
   function reset() {
@@ -127,7 +137,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         subtitle="เพิ่มและติดตามดีลทั้งหมดในระบบ"
         actions={
           <>
-          <button className="btn" disabled={exporting || loading} onClick={exportDeals}>{exporting ? "กำลัง Export…" : selected.length ? `Export ที่เลือก (${selected.length})` : "↓ Export ทั้งหมดตามตัวกรอง"}</button>
+          <button className="btn" disabled={exporting || loading} onClick={exportDeals}>{exporting ? "กำลัง Export…" : <><IcoDownload size={14} /> {selected.length ? `Export ที่เลือก (${selected.length})` : "Export ทั้งหมดตามตัวกรอง"}</>}</button>
           <button className="btn btn-primary" onClick={() => setTarget("new")}>
             <IcoPlus size={14} /> เพิ่ม Deal ใหม่
           </button></>
@@ -135,10 +145,10 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
       />
 
       <div className="stat-row">
-        <StatChip on label="ทั้งหมด" value={counts.all} />
-        <StatChip label="Follow Up" value={counts.followUp} />
-        <StatChip label="PR / PO" value={counts.pr} />
-        <StatChip label="Inactive" value={counts.inactive} />
+        <StatChip on={filters.dealStatus.length === 0} label="ทั้งหมด" value={counts.all} onClick={() => selectStatus([])} />
+        <StatChip on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Follow Up"} label="Follow Up (หน้านี้)" value={counts.followUp} onClick={() => selectStatus(["Follow Up"])} />
+        <StatChip on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "PR"} label="PR / PO (หน้านี้)" value={counts.pr} onClick={() => selectStatus(["PR"])} />
+        <StatChip on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Inactive"} label="Inactive (หน้านี้)" value={counts.inactive} onClick={() => selectStatus(["Inactive"])} />
         <div className="updates-card">
           <div>
             <b>แจ้งเตือน (หน้านี้)</b>
@@ -153,12 +163,13 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
       <div className="panel pipeline-panel">
       <FilterBar embedded
         title="ตัวกรองการค้นหา"
+        onSubmit={apply}
         actions={
           <>
-            <button className="btn btn-primary btn-sm" onClick={apply}>
-              🔍 ค้นหา
+            <button type="submit" className="btn btn-primary btn-sm">
+              <IcoSearch size={13} /> ค้นหา
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={reset}>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={reset}>
               ล้างค่า
             </button>
           </>
@@ -242,14 +253,17 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
               </tr>
             </thead>
             <tbody>
-              {loading && (
-                <tr className="empty-row">
-                  <td colSpan={15}>กำลังโหลด…</td>
-                </tr>
-              )}
+              {loading && <SkeletonRows cols={15} rows={Math.min(size, 8)} />}
               {!loading && data?.content.length === 0 && (
                 <tr className="empty-row">
-                  <td colSpan={15}>ไม่พบ deal ตามเงื่อนไข</td>
+                  <td colSpan={15}>
+                    ไม่พบ deal ตามเงื่อนไข
+                    {JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS) && (
+                      <div className="empty-cta">
+                        <button className="btn btn-sm" onClick={reset}>ล้างตัวกรองทั้งหมด</button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               )}
               {data?.content.map((d, i) => (
@@ -291,13 +305,14 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
                   <td>
                     <button
                       className="rowbtn"
-                      title="แก้ไข"
+                      title={`แก้ไข ${d.recordId}`}
+                      aria-label={`แก้ไข ${d.recordId}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setTarget(d.id);
                       }}
                     >
-                      ✎
+                      <IcoEdit size={13} />
                     </button>
                   </td>
                 </tr>
@@ -336,14 +351,14 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   );
 }
 
-function StatChip({ label, value, on }: { label: string; value: number; on?: boolean }) {
+function StatChip({ label, value, on, onClick }: { label: string; value: number; on?: boolean; onClick?: () => void }) {
   return (
-    <div className={`stat-chip${on ? " on" : ""}`}>
-      <div className="stat-icon">≡</div>
+    <button type="button" className={`stat-chip${on ? " on" : ""}`} aria-pressed={!!on} onClick={onClick}>
+      <div className="stat-icon" aria-hidden="true">≡</div>
       <div>
         <div className="lbl">{label}</div>
         <div className="val num">{value}</div>
       </div>
-    </div>
+    </button>
   );
 }

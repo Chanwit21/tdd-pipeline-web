@@ -5,6 +5,7 @@ import { api, ApiError } from "@/lib/api";
 import { useMasterConfig } from "@/lib/hooks";
 import { useToast } from "@/components/Toast";
 import { PageHead, Modal, Badge, Pager } from "@/components/ui";
+import { IcoClose, IcoEdit } from "@/components/icons";
 import { formatDateTime } from "@/lib/format";
 import type { AdminUser, FieldError } from "@/lib/types";
 
@@ -137,6 +138,7 @@ export default function UserManagementPage() {
                     <button
                       className="rowbtn"
                       title={`แก้ไข ${u.username}`}
+                      aria-label={`แก้ไข ${u.username}`}
                       style={{ marginRight: 14 }}
                       onClick={() => {
                         setErrors({});
@@ -151,7 +153,7 @@ export default function UserManagementPage() {
                         });
                       }}
                     >
-                      ✎
+                      <IcoEdit size={13} />
                     </button>
                     <button className="linkbtn" style={{ color: "var(--text-muted)" }} onClick={() => toggleActive(u)}>
                       {u.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
@@ -173,8 +175,8 @@ export default function UserManagementPage() {
           <>
             <div className="modal-head">
               <h3>{form.id ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้งาน"}</h3>
-              <button className="icon-x" onClick={() => setForm(null)}>
-                ✕
+              <button className="icon-x" aria-label="ปิด" onClick={() => setForm(null)}>
+                <IcoClose size={15} />
               </button>
             </div>
             <div className="mpanel">

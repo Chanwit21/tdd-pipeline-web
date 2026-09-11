@@ -8,6 +8,7 @@ import { useMasterConfig } from "@/lib/hooks";
 import { useToast } from "@/components/Toast";
 import { crossFieldHint, situationFor, stagesForStatus, validateDeal } from "@/lib/validation";
 import { formatDateTime, todayIso } from "@/lib/format";
+import { IcoClose, IcoAlertTriangle } from "@/components/icons";
 import type { Deal, DealFormValues, FieldError } from "@/lib/types";
 
 const EMPTY: DealFormValues = {
@@ -189,8 +190,8 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
               : "…"}
           </div>
         </div>
-        <button className="icon-x" onClick={onClose}>
-          ✕
+        <button className="icon-x" aria-label="ปิด" onClick={onClose}>
+          <IcoClose size={15} />
         </button>
       </div>
 
@@ -215,7 +216,8 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
         <div className="mpanel">
           {deal?.legacyMigrated && deal.migrationRemark && (
             <div className="warn-banner">
-              ⚠️ ข้อมูลนี้ import จาก Excel เดิมและไม่ตรงกฎ: {deal.migrationRemark} — แก้ไขให้ตรงกฎก่อนกดบันทึก
+              <IcoAlertTriangle size={15} />
+              <span>ข้อมูลนี้ import จาก Excel เดิมและไม่ตรงกฎ: {deal.migrationRemark} — แก้ไขให้ตรงกฎก่อนกดบันทึก</span>
             </div>
           )}
           <div className="form-grid">

@@ -178,9 +178,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <b>{dateStr}</b>
               <span>เวลา {timeStr} น.</span>
             </div>
-            <div className="bell">
-              <IcoBell size={16} />
-              <span className="dot" />
+            <div className="bell" role="status">
+              <IcoBell size={16} aria-hidden="true" />
+              <span className="dot" aria-hidden="true" />
+              <span className="sr-only">มีการแจ้งเตือนใหม่</span>
             </div>
           </div>
         </header>
