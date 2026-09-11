@@ -52,10 +52,10 @@ export default function DashboardPage() {
     {error && <div className="warn-banner" role="alert">{error}</div>}
     {loading ? <div className="panel panel-body">กำลังโหลด…</div> : <>
       <div className="kpi-grid">
-        <Kpi label="Total Pipeline Amount" value={formatAmount(s?.totalPipelineAmount)} sub={`รวม ${s?.activeDealCount ?? 0} ดีล Active`} />
-        <Kpi label="Best Case Amount" value={formatAmount(s?.bestCaseAmount)} sub="Probability 75% ขึ้นไป" />
-        <Kpi label="Won / PO เดือนนี้" value={formatAmount(s?.wonAmount)} sub="Closed Date เดือนปัจจุบัน ภายใต้ตัวกรอง" />
-        <Kpi label="Overdue Follow Up" value={String(data?.overdue.length ?? 0)} sub="ดีลที่ต้องติดตาม" />
+        <Kpi icon="฿" tone="info" label="Total Pipeline Amount" value={formatAmount(s?.totalPipelineAmount)} sub={`รวม ${s?.activeDealCount ?? 0} ดีล Active`} />
+        <Kpi icon="✓" tone="success" label="Best Case Amount" value={formatAmount(s?.bestCaseAmount)} sub="Probability 75% ขึ้นไป" />
+        <Kpi icon="🏆" tone="accent" label="Won / PO เดือนนี้" value={formatAmount(s?.wonAmount)} sub="Closed Date เดือนปัจจุบัน ภายใต้ตัวกรอง" />
+        <Kpi icon="!" tone="danger" label="Overdue Follow Up" value={String(data?.overdue.length ?? 0)} sub="ดีลที่ต้องติดตาม" />
       </div>
       <Panel title="Deal ที่เลย Closed Date (Overdue)" extra={<Badge tone="danger">{data?.overdue.length ?? 0} รายการ</Badge>} bodyPad={false}>
         <div className="table-wrap"><table><thead><tr><th className="col-no">No.</th><th>Record ID</th><th>ลูกค้า</th><th>Deal Name</th><th>Department</th><th>Deal Owner</th><th>Closed Date</th><th className="amount-cell">Amount</th><th /></tr></thead><tbody>
@@ -79,4 +79,4 @@ export default function DashboardPage() {
     </>}
   </div>;
 }
-function Kpi({label,value,sub}:{label:string;value:string;sub:string}) { return <div className="kpi-card"><div className="kpi-top"><span>{label}</span></div><div className="kpi-val num">{value}</div><div className="kpi-sub">{sub}</div></div>; }
+function Kpi({label,value,sub,icon,tone}:{label:string;value:string;sub:string;icon:string;tone:string}) { return <div className="kpi-card"><div className="kpi-top"><span>{label}</span><div className="kpi-ico" aria-hidden="true" style={{background:`var(--${tone}-weak)`,color:`var(--${tone})`}}>{icon}</div></div><div className="kpi-val num">{value}</div><div className="kpi-sub">{sub}</div></div>; }

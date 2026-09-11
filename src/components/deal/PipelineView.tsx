@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -43,11 +43,13 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   const toast = useToast();
   const [exporting, setExporting] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
+  const requestId = useRef(0);
   const query = {
     ...filters, departmentId: isAdmin ? filters.departmentId : undefined,
     probability: filters.probability || undefined, createdYear: filters.createdYear || undefined,
   };
   const load = useCallback(() => {
+    const id = ++requestId.current;
     setLoading(true);
     api<Page<Deal>>("/api/deals", {
       query: {
@@ -64,12 +66,14 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         size,
       },
     })
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, [isAdmin, filters, page, size]);
+      .then(result => { if (id === requestId.current) setData(result); })
+      .catch(e => { if (id === requestId.current) { setData(null); toast.push(e.message || "โหลดข้อมูลไม่สำเร็จ", "error"); } })
+      .finally(() => { if (id === requestId.current) setLoading(false); });
+  }, [isAdmin, filters, page, size, toast]);
 
   useEffect(() => {
     load();
+    return () => { requestId.current++; };
   }, [load]);
 
   const counts = useMemo(() => {
@@ -136,9 +140,9 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
 
       <div className="stat-row">
         <StatChip on label="ทั้งหมด" value={counts.all} />
-        <StatChip label="Follow Up" value={counts.followUp} />
-        <StatChip label="PR / PO" value={counts.pr} />
-        <StatChip label="Inactive" value={counts.inactive} />
+        <StatChip label="Follow Up (หน้านี้)" value={counts.followUp} />
+        <StatChip label="PR / PO (หน้านี้)" value={counts.pr} />
+        <StatChip label="Inactive (หน้านี้)" value={counts.inactive} />
         <div className="updates-card">
           <div>
             <b>แจ้งเตือน (หน้านี้)</b>
