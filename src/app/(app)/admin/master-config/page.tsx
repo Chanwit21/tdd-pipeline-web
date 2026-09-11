@@ -48,15 +48,15 @@ export default function MasterConfigPage() {
       <Subtabs value={sub} onChange={setSub} items={[{value:"dept",label:"Department"},{value:"stage",label:"Deal Stage"},{value:"prob",label:"Probability → Situation"},{value:"type",label:"Deal Type / Status"}]} />
       <div className="subpanel">
         {sub === "dept" && <>
+          <div className="master-actions" style={{justifyContent:"flex-end",marginBottom:10}}><button className="btn btn-primary btn-sm" onClick={()=>open("departments")}>+ เพิ่มแผนก</button></div>
           <div className="table-wrap"><table><thead><tr><th className="col-no">No.</th><th>Department</th><th>ชื่อเต็ม</th><th>Deal Owner (Lock)</th><th>Manager ที่ผูก</th><th /></tr></thead><tbody>
-            {config.departments.map((d,i)=><tr key={d.id}><td className="col-no">{i+1}</td><td className="cell-strong">{d.code}</td><td>{d.name}</td><td>{d.defaultOwner || "—"}</td><td>{users.filter(u=>u.departmentId===d.id && u.role==="MANAGER" && u.active).map(u=>u.fullName).join(", ") || "—"}</td><td><button className="rowbtn" title={`แก้ไข ${d.code}`} aria-label={`แก้ไข ${d.code}`} onClick={()=>open("departments",d)}>✎</button></td></tr>)}
+            {config.departments.map((d,i)=><tr key={d.id}><td className="col-no">{i+1}</td><td className="cell-strong">{d.code}</td><td>{d.name}</td><td>{d.defaultOwner || "—"}</td><td>{users.filter(u=>u.departmentId===d.id && u.role==="MANAGER" && u.active).map(u=>u.fullName).join(", ")}</td><td><button className="rowbtn" title={`แก้ไข ${d.code}`} aria-label={`แก้ไข ${d.code}`} onClick={()=>open("departments",d)}>✎</button></td></tr>)}
           </tbody></table></div>
-          <div className="master-actions"><button className="btn btn-sm" onClick={()=>open("departments")}>+ เพิ่มแผนก</button></div>
         </>}
         {sub === "stage" && <>
+          <div className="master-actions" style={{justifyContent:"flex-end",marginBottom:10}}><button className="btn btn-primary btn-sm" onClick={()=>open("stages")}>+ เพิ่ม Deal Stage</button></div>
           <div className="rule-line"><b style={{width:120}}>Deal Status</b><span className="arrow">→</span><b>Deal Stage ที่เลือกได้</b></div>
           {config.dealStatuses.map(status=><div className="rule-line" key={status}><b style={{width:120,flexShrink:0}}>{status}</b><span className="arrow">→</span><div className="chiprow">{config.dealStages.filter(s=>s.allowedFor.includes(status)).map(s=><span className="chip" key={s.id}><button className="linkbtn" onClick={()=>open("stages",s)}>{s.name}</button><button className="rowbtn" title={`ลบ ${s.name}`} aria-label={`ลบ ${s.name}`} onClick={()=>{setError("");setPendingDelete({kind:"stages",id:s.id,name:s.name});}}>×</button></span>)}</div></div>)}
-          <div className="master-actions"><button className="btn btn-sm" onClick={()=>open("stages")}>+ เพิ่ม Deal Stage</button></div>
         </>}
         {sub === "prob" && <>
           <div className="table-wrap"><table><thead><tr><th className="col-no">No.</th><th>Probability</th><th>Situation (คำนวณอัตโนมัติ)</th></tr></thead><tbody>{config.probabilities.map((p,i)=><tr key={p.probability}><td className="col-no">{i+1}</td><td>{p.probability}</td><td><Badge tone={p.situation==="Best Case"?"success":p.situation==="Worst Case"?"danger":"warning"}>{p.situation}</Badge></td></tr>)}</tbody></table></div>
@@ -71,10 +71,10 @@ export default function MasterConfigPage() {
       {form && <><div className="modal-head"><h3>{form.id?"แก้ไข":"เพิ่ม"} {title[form.kind]}</h3><button className="icon-x" aria-label="ปิด" disabled={busy} onClick={()=>setForm(null)}>×</button></div><div className="mpanel">
         {error && <div className="warn-banner" role="alert">{error}</div>}
         <div className="form-grid" style={{gridTemplateColumns:"1fr"}}>
-          {form.kind==="departments" && <div className="form-field"><label>รหัสแผนก *</label><input maxLength={20} value={form.code} onChange={e=>setForm({...form,code:e.target.value})} /></div>}
-          <div className="form-field"><label>{form.kind==="departments"?"ชื่อเต็ม":"ชื่อ"} *</label><input maxLength={form.kind==="departments"?100:form.kind==="stages"?80:50} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} /></div>
+          {form.kind==="departments" && <div className="form-field"><label>รหัสแผนก <span className="req">*</span></label><input maxLength={20} value={form.code} onChange={e=>setForm({...form,code:e.target.value})} /></div>}
+          <div className="form-field"><label>{form.kind==="departments"?"ชื่อเต็ม":"ชื่อ"} <span className="req">*</span></label><input maxLength={form.kind==="departments"?100:form.kind==="stages"?80:50} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} /></div>
           {form.kind==="departments" && <div className="form-field"><label>Deal Owner</label><input maxLength={100} value={form.defaultOwner} onChange={e=>setForm({...form,defaultOwner:e.target.value})} /></div>}
-          {form.kind==="stages" && <fieldset><legend>Deal Status ที่อนุญาต *</legend>{config.dealStatuses.map(s=><label key={s} style={{display:"flex",gap:8,padding:6}}><input type="checkbox" checked={form.allowedFor.includes(s)} onChange={e=>setForm({...form,allowedFor:e.target.checked?[...form.allowedFor,s]:form.allowedFor.filter(v=>v!==s)})} />{s}</label>)}</fieldset>}
+          {form.kind==="stages" && <fieldset><legend>Deal Status ที่อนุญาต <span className="req">*</span></legend>{config.dealStatuses.map(s=><label key={s} style={{display:"flex",gap:8,padding:6}}><input type="checkbox" checked={form.allowedFor.includes(s)} onChange={e=>setForm({...form,allowedFor:e.target.checked?[...form.allowedFor,s]:form.allowedFor.filter(v=>v!==s)})} />{s}</label>)}</fieldset>}
         </div>
       </div><div className="modal-foot"><button className="btn" disabled={busy} onClick={()=>setForm(null)}>ยกเลิก</button><button className="btn btn-primary" disabled={busy || !form.name.trim() || (form.kind==="departments"&&!form.code.trim()) || (form.kind==="stages"&&!form.allowedFor.length)} onClick={save}>{busy?"กำลังบันทึก…":"บันทึก"}</button></div></>}
     </Modal>

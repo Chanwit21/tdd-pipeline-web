@@ -351,7 +351,7 @@ tbody tr.row-success:hover > td, tbody tr.row-slate:hover > td, tbody tr.row-dan
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
 .form-grid .span2 { grid-column: 1 / -1; }
 .form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-.form-field .req { color: var(--danger); }
+.req { color: var(--danger); }
 .form-field select, .form-field input, .form-field textarea {
   width: 100%; border: 1px solid var(--border-strong); border-radius: 9px; padding: 9px 11px; font-size: 13px; font-family: inherit; color: var(--text); outline: none; background: var(--surface);
 }

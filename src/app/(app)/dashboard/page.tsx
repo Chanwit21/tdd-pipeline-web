@@ -71,7 +71,7 @@ export default function DashboardPage() {
       <Panel title="สรุป Pipeline แยกตามแผนก (Active)" bodyPad={false}>
         <div className="table-wrap"><table className="pivot"><thead><tr><th className="col-no">No.</th><th>Department</th><th>จำนวนดีล</th><th>Sum of Amount</th><th>Best Case</th><th>Won / PO เดือนนี้</th></tr></thead><tbody>
           {data?.byDepartment.map((r,i) => <tr key={r.department}><td className="col-no">{i+1}</td><td>{r.department}</td><td className="num">{r.dealCount}</td><td className="num">{formatAmount(r.amount)}</td><td className="num">{formatAmount(r.bestCase)}</td><td className="num">{formatAmount(r.wonAmount)}</td></tr>)}
-          {!!data?.byDepartment.length && <tr className="total"><td className="col-no">—</td><td>Grand Total</td>{(["dealCount","amount","bestCase","wonAmount"] as const).map(k => <td className="num" key={k}>{formatAmount(data.byDepartment.reduce((n,r) => n+r[k],0))}</td>)}</tr>}
+          {!!data?.byDepartment.length && <tr className="total"><td className="col-no"></td><td>Grand Total</td>{(["dealCount","amount","bestCase","wonAmount"] as const).map(k => <td className="num" key={k}>{formatAmount(data.byDepartment.reduce((n,r) => n+r[k],0))}</td>)}</tr>}
           {!data?.byDepartment.length && <tr className="empty-row"><td colSpan={6}>ไม่พบข้อมูล</td></tr>}
         </tbody></table></div>
       </Panel>
