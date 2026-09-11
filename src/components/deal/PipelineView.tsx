@@ -6,7 +6,8 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMasterConfig } from "@/lib/hooks";
 import { formatAmount, formatMonth, formatDate } from "@/lib/format";
-import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
+import { stagesForStatus } from "@/lib/validation";
+import { PageHead, FilterBar, Field, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
 import { IcoPipeline, IcoPlus, IcoDownload } from "@/components/icons";
 import { DealFormModal } from "@/components/deal/DealFormModal";
 import { MultiCheckbox } from "@/components/MultiCheckbox";
@@ -17,8 +18,8 @@ import type { Deal, Page } from "@/lib/types";
 const DEFAULT_FILTERS = {
   departmentId: [] as string[],
   dealStatus: [] as string[],
-  dealStage: "",
-  probability: "",
+  dealStage: [] as string[],
+  probability: [] as string[],
   createdYear: "",
   closedFrom: "",
   closedTo: "",
@@ -46,7 +47,9 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   const requestId = useRef(0);
   const query = {
     ...filters, departmentId: isAdmin ? filters.departmentId : undefined,
-    probability: filters.probability || undefined, createdYear: filters.createdYear || undefined,
+    dealStage: filters.dealStage.length ? filters.dealStage : undefined,
+    probability: filters.probability.length ? filters.probability : undefined,
+    createdYear: filters.createdYear || undefined,
   };
   const load = useCallback(() => {
     const id = ++requestId.current;
@@ -54,9 +57,9 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
     api<Page<Deal>>("/api/deals", {
       query: {
         departmentId: isAdmin ? filters.departmentId : undefined,
-        dealStatus: filters.dealStatus || undefined,
-        dealStage: filters.dealStage || undefined,
-        probability: filters.probability || undefined,
+        dealStatus: filters.dealStatus.length ? filters.dealStatus : undefined,
+        dealStage: filters.dealStage.length ? filters.dealStage : undefined,
+        probability: filters.probability.length ? filters.probability : undefined,
         createdYear: filters.createdYear || undefined,
         search: filters.search || undefined,
         overdueOnly: filters.overdueOnly || undefined,
@@ -127,7 +130,15 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
     finally { setExporting(false); }
   }
 
-  const stageOpts = (config?.dealStages ?? []).map((s) => ({ value: s.name, label: s.name }));
+  // Deal Stage options narrow to whatever's reachable from the selected Deal Status filter(s),
+  // same relationship the Deal form already enforces — avoids offering combinations that can
+  // never match anything (e.g. "Won" while only "PR" is selected).
+  const stageNames = config
+    ? draft.dealStatus.length
+      ? Array.from(new Set(draft.dealStatus.flatMap((s) => stagesForStatus(s, config))))
+      : config.dealStages.map((s) => s.name)
+    : [];
+  const stageOpts = stageNames.map((name) => ({ value: name, label: name }));
 
   return (
     <div className="stack">
@@ -187,23 +198,30 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         <Field label="Deal Status">
           <MultiCheckbox label="Deal Status"
             value={draft.dealStatus}
-            onChange={(v) => setDraft({ ...draft, dealStatus: v })}
+            onChange={(v) => {
+              const allowed = v.length
+                ? new Set(v.flatMap((s) => (config ? stagesForStatus(s, config) : [])))
+                : null;
+              setDraft({
+                ...draft,
+                dealStatus: v,
+                dealStage: allowed ? draft.dealStage.filter((s) => allowed.has(s)) : draft.dealStage,
+              });
+            }}
             options={(config?.dealStatuses ?? []).map((s) => ({ value: s, label: s }))}
           />
         </Field>
         <Field label="Deal Stage">
-          <Select
+          <MultiCheckbox label="Deal Stage"
             value={draft.dealStage}
             onChange={(v) => setDraft({ ...draft, dealStage: v })}
-            all="ทั้งหมด"
             options={stageOpts}
           />
         </Field>
         <Field label="Probability">
-          <Select
+          <MultiCheckbox label="Probability"
             value={draft.probability}
             onChange={(v) => setDraft({ ...draft, probability: v })}
-            all="ทั้งหมด"
             options={(config?.probabilities ?? []).map((p) => ({ value: p.probability, label: p.probability }))}
           />
         </Field>
@@ -271,7 +289,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
                 >
                   <td onClick={e => e.stopPropagation()}><input type="checkbox" aria-label={`เลือก ${d.recordId}`} checked={selected.includes(d.id)} onChange={e => setSelected(e.target.checked ? [...selected, d.id] : selected.filter(id => id !== d.id))} /></td>
                   <td className="col-no">{(page - 1) * size + i + 1}</td>
-                  <td className={`cell-strong${d.rowColor === "danger" ? " cell-accentbar" : ""}`}>
+                  <td className="cell-strong">
                     {d.recordId}
                     {d.legacyMigrated && (
                       <>
