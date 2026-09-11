@@ -68,18 +68,32 @@ export default function DashboardPage() {
           {!data?.overdue.length && <tr className="empty-row"><td colSpan={9}>ไม่มีรายการ Overdue</td></tr>}
         </tbody></table></div>
       </Panel>
-      <Panel title="สรุป Pipeline แยกตามแผนก (Active)" bodyPad={false}>
-        <div className="table-wrap"><table className="pivot"><thead><tr><th className="col-no">No.</th><th>Department</th><th>จำนวนดีล</th><th>Sum of Amount</th><th>Best Case</th><th>Won / PO เดือนนี้</th></tr></thead><tbody>
-          {data?.byDepartment.map((r,i) => <tr key={r.department}><td className="col-no">{i+1}</td><td>{r.department}</td><td className="num">{r.dealCount}</td><td className="num">{formatAmount(r.amount)}</td><td className="num">{formatAmount(r.bestCase)}</td><td className="num">{formatAmount(r.wonAmount)}</td></tr>)}
-          {!!data?.byDepartment.length && <tr className="total"><td className="col-no"></td><td>Grand Total</td>{(["dealCount","amount","bestCase","wonAmount"] as const).map(k => <td className="num" key={k}>{formatAmount(data.byDepartment.reduce((n,r) => n+r[k],0))}</td>)}</tr>}
-          {!data?.byDepartment.length && <tr className="empty-row"><td colSpan={6}>ไม่พบข้อมูล</td></tr>}
-        </tbody></table></div>
-      </Panel>
-      <Panel title="จำนวน Deal ที่ Active แยกทีม">
-        <div className="bar-chart">{data?.byDepartment.map(r => <div className="bar-chart-row" key={r.department}><b>{r.department}</b><div className="bar-track" role="img" aria-label={`${r.department}: ${r.dealCount} deals`}><div className="bar-fill" style={{ width: `${100*r.dealCount/Math.max(1,...data.byDepartment.map(d=>d.dealCount))}%` }} /></div><span className="num">{r.dealCount}</span></div>)}{!data?.byDepartment.length && <span>ไม่พบข้อมูล</span>}</div>
-      </Panel>
-      <Panel title="สรุปตามปีที่สร้าง — ทุกปีภายใต้ตัวกรองแผนก/สถานะ/Probability" bodyPad={false}>
-        <div className="table-wrap"><table><thead><tr><th>Created Year</th><th className="amount-cell">จำนวน Deal</th><th className="amount-cell">Amount</th></tr></thead><tbody>{data?.byYear.map(r=><tr key={r.year}><td>{r.year}{r.year===new Date().getFullYear()?" (ปีปัจจุบัน)":""}</td><td className="num">{r.dealCount}</td><td className="num">{formatAmount(r.amount)}</td></tr>)}{!data?.byYear.length && <tr className="empty-row"><td colSpan={3}>ไม่พบข้อมูล</td></tr>}</tbody></table></div>
+      <div className="dash-cols">
+        <Panel title="สรุป Pipeline แยกตามแผนก (Active)" bodyPad={false}>
+          <div className="table-wrap"><table className="pivot"><thead><tr><th className="col-no">No.</th><th>Department</th><th>จำนวนดีล</th><th>Sum of Amount</th><th>Best Case</th><th>Won / PO เดือนนี้</th></tr></thead><tbody>
+            {data?.byDepartment.map((r,i) => <tr key={r.department}><td className="col-no">{i+1}</td><td>{r.department}</td><td className="num">{r.dealCount}</td><td className="num">{formatAmount(r.amount)}</td><td className="num">{formatAmount(r.bestCase)}</td><td className="num">{formatAmount(r.wonAmount)}</td></tr>)}
+            {!!data?.byDepartment.length && <tr className="total"><td className="col-no"></td><td>Grand Total</td>{(["dealCount","amount","bestCase","wonAmount"] as const).map(k => <td className="num" key={k}>{formatAmount(data.byDepartment.reduce((n,r) => n+r[k],0))}</td>)}</tr>}
+            {!data?.byDepartment.length && <tr className="empty-row"><td colSpan={6}>ไม่พบข้อมูล</td></tr>}
+          </tbody></table></div>
+        </Panel>
+        <Panel title="จำนวน Deal ที่ Active แยกทีม">
+          <div className="bar-chart">{data?.byDepartment.map(r => <div className="bar-chart-row" key={r.department}><b>{r.department}</b><div className="bar-track" role="img" aria-label={`${r.department}: ${r.dealCount} deals`}><div className="bar-fill" style={{ width: `${100*r.dealCount/Math.max(1,...data.byDepartment.map(d=>d.dealCount))}%` }} /></div><span className="num">{r.dealCount}</span></div>)}{!data?.byDepartment.length && <span>ไม่พบข้อมูล</span>}</div>
+        </Panel>
+      </div>
+      <Panel title="สรุปตามปีที่สร้าง — ทุกปีภายใต้ตัวกรองแผนก/สถานะ/Probability">
+        <div className="bar-chart">
+          {data?.byYear.map(r => (
+            <div className="bar-chart-row" style={{ gridTemplateColumns: "116px 1fr 40px 120px" }} key={r.year}>
+              <b>{r.year}{r.year === new Date().getFullYear() ? " (ปีปัจจุบัน)" : ""}</b>
+              <div className="bar-track" role="img" aria-label={`${r.year}: ${r.dealCount} deals, ${formatAmount(r.amount)} บาท`}>
+                <div className="bar-fill" style={{ width: `${100 * r.dealCount / Math.max(1, ...data.byYear.map(d => d.dealCount))}%` }} />
+              </div>
+              <span className="num">{r.dealCount}</span>
+              <span className="num cell-muted" style={{ textAlign: "right" }}>{formatAmount(r.amount)}</span>
+            </div>
+          ))}
+          {!data?.byYear.length && <span>ไม่พบข้อมูล</span>}
+        </div>
       </Panel>
     </>}
   </div>;
