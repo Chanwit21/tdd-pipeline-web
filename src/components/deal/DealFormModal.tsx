@@ -189,7 +189,7 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
               : "…"}
           </div>
         </div>
-        <button className="icon-x" onClick={onClose}>
+        <button className="icon-x" aria-label="ปิด" onClick={onClose}>
           ✕
         </button>
       </div>

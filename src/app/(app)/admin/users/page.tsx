@@ -137,6 +137,7 @@ export default function UserManagementPage() {
                     <button
                       className="rowbtn"
                       title={`แก้ไข ${u.username}`}
+                      aria-label={`แก้ไข ${u.username}`}
                       style={{ marginRight: 14 }}
                       onClick={() => {
                         setErrors({});
@@ -173,7 +174,7 @@ export default function UserManagementPage() {
           <>
             <div className="modal-head">
               <h3>{form.id ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้งาน"}</h3>
-              <button className="icon-x" onClick={() => setForm(null)}>
+              <button className="icon-x" aria-label="ปิด" onClick={() => setForm(null)}>
                 ✕
               </button>
             </div>
