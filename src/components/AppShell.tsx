@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
@@ -40,6 +40,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [open, setOpen] = useState(false); // mobile drawer
   const [collapsed, setCollapsed] = useState(false); // desktop rail
+  const mainRef = useRef<HTMLElement>(null);
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    // Move focus to the main content region on client-side route changes, so
+    // keyboard/screen-reader users land somewhere sensible instead of staying
+    // on the nav link they just activated. Skip the very first mount.
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    mainRef.current?.focus();
+  }, [pathname]);
 
   useEffect(() => {
     const isMobile = () => window.matchMedia("(max-width: 860px)").matches;
@@ -98,6 +111,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
+      <a href="#main-content" className="skip-link">
+        ข้ามไปยังเนื้อหาหลัก
+      </a>
       {open && <div className="sidebar-scrim" onClick={() => setOpen(false)} />}
 
       <aside className={`sidebar${collapsed ? " collapsed" : ""}${open ? " open" : ""}`}>
@@ -186,7 +202,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="content">{children}</main>
+        <main className="content" id="main-content" tabIndex={-1} ref={mainRef}>
+          {children}
+        </main>
       </div>
     </div>
   );

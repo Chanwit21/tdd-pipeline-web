@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -403,6 +403,14 @@ function FF({
   error?: string;
   children: React.ReactNode;
 }) {
+  const errId = `fld-${id}-err`;
+  const control =
+    error && isValidElement(children)
+      ? cloneElement(children as React.ReactElement<{ "aria-describedby"?: string; "aria-invalid"?: boolean }>, {
+          "aria-describedby": errId,
+          "aria-invalid": true,
+        })
+      : children;
   return (
     <div
       id={`fld-${id}`}
@@ -412,8 +420,12 @@ function FF({
         {label}
         {!rawLabel && required && <span className="req"> *</span>}
       </label>
-      {children}
-      {error && <div className="field-err">{error}</div>}
+      {control}
+      {error && (
+        <div className="field-err" id={errId}>
+          {error}
+        </div>
+      )}
     </div>
   );
 }
