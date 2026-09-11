@@ -41,6 +41,14 @@ export default function MasterConfigPage() {
     } catch (e) { setError(e instanceof Error ? e.message : "แก้ไขไม่สำเร็จ"); }
     finally { setBusy(false); }
   }
+  async function setLifecycle(kind: "types" | "statuses", id: number, status: "ACTIVE" | "INACTIVE" | "ARCHIVED") {
+    setBusy(true); setError("");
+    try {
+      await api(`/api/admin/master-config/${kind}/${id}/status`, { method: "PATCH", body: { status } });
+      invalidateMasterConfig(); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "อัปเดตไม่สำเร็จ"); }
+    finally { setBusy(false); }
+  }
   async function saveRule() {
     if (!ruleEdit) return; setBusy(true); setError("");
     try { await api("/api/admin/master-config/rules", {method:"PUT", body:{key:ruleEdit==="wonProbability"?"XREF_WON_PROBABILITY":"XREF_PO_PROBABILITY", value:ruleValue}}); invalidateMasterConfig(); await load(); setRuleEdit(null); toast.push("บันทึกกฎสำเร็จ", "success"); }
@@ -73,7 +81,7 @@ export default function MasterConfigPage() {
           {(["wonProbability","poProbability"] as const).map(key=><div className="rule-line" key={key}><b>{key==="wonProbability"?"Won":"PO"}</b><span>ต้องมี Probability</span>{ruleEdit===key?<><select aria-label="Probability ของกฎ" value={ruleValue} onChange={e=>setRuleValue(e.target.value)}>{config.probabilities.map(p=><option key={p.probability}>{p.probability}</option>)}</select><button className="btn btn-primary btn-sm" disabled={busy} onClick={saveRule}>บันทึก</button><button className="btn btn-sm" disabled={busy} onClick={()=>setRuleEdit(null)}>ยกเลิก</button></>:<><Badge tone="info">{config.rules[key]}</Badge><button className="btn btn-sm" onClick={()=>{setRuleEdit(key);setRuleValue(config.rules[key]);setError("");}}>Edit</button></>}</div>)}
         </>}
         {sub === "type" && <div className="form-grid">
-          {(["types","statuses"] as const).map(kind=><div className="subcard" key={kind}><div className="subcard-head"><h3>{title[kind]}</h3><button className="btn btn-primary btn-sm" onClick={()=>open(kind)}>+ เพิ่ม {title[kind]}</button></div><div className="chiprow" style={{marginTop:12}}>{(kind==="types"?config.typeOptions:config.statusOptions).map(item=><span className="chip" key={item.id}><button className="linkbtn" onClick={()=>open(kind,item)}>{item.name}</button><button className="rowbtn" title={`ลบ ${item.name}`} aria-label={`ลบ ${item.name}`} onClick={()=>{setError("");setPendingDelete({kind,id:item.id,name:item.name});}}>×</button></span>)}</div></div>)}
+          {(["types","statuses"] as const).map(kind=><div className="subcard" key={kind}><div className="subcard-head"><h3>{title[kind]}</h3><button className="btn btn-primary btn-sm" onClick={()=>open(kind)}>+ เพิ่ม {title[kind]}</button></div><div className="chiprow" style={{marginTop:12}}>{(kind==="types"?config.typeOptions:config.statusOptions).filter(item=>item.status!=="ARCHIVED").map(item=><span className="chip" key={item.id}><button className="linkbtn" onClick={()=>open(kind,item)}>{item.name}</button>{item.status==="ACTIVE"?<button className="rowbtn" title={`ปิดใช้งาน ${item.name}`} aria-label={`ปิดใช้งาน ${item.name}`} disabled={busy} onClick={()=>setLifecycle(kind,item.id,"INACTIVE")}>⏸</button>:<><button className="rowbtn" title={`เปิดใช้งาน ${item.name}`} aria-label={`เปิดใช้งาน ${item.name}`} disabled={busy} onClick={()=>setLifecycle(kind,item.id,"ACTIVE")}>▶</button><button className="rowbtn" title={`เก็บถาวร ${item.name}`} aria-label={`เก็บถาวร ${item.name}`} disabled={busy} onClick={()=>setLifecycle(kind,item.id,"ARCHIVED")}>🗄</button></>}</span>)}</div></div>)}
         </div>}
       </div>
     </div>

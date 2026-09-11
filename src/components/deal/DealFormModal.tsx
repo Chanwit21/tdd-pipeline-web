@@ -85,12 +85,20 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
   }, [config, v.departmentId, deal]);
 
   const situation = config ? situationFor(v.probability, config) : "";
+  const typeChoices = config
+    ? config.typeOptions.filter((t) => t.status === "ACTIVE" || t.name === v.dealType).map((t) => t.name)
+    : [];
   const stageOptions = config ? stagesForStatus(v.dealStatus, config).filter(s =>
     (s !== "Won" || v.probability === config.rules.wonProbability) &&
     (s !== "PO" || v.probability === config.rules.poProbability)) : [];
-  const statusOptions = config ? config.dealStatuses.filter(status => stagesForStatus(status, config).some(s =>
-    (s !== "Won" || v.probability === config.rules.wonProbability) &&
-    (s !== "PO" || v.probability === config.rules.poProbability))) : [];
+  const activeOrCurrentStatusNames = config
+    ? new Set(config.statusOptions.filter((s) => s.status === "ACTIVE" || s.name === v.dealStatus).map((s) => s.name))
+    : new Set<string>();
+  const statusOptions = config ? config.dealStatuses.filter(status =>
+    activeOrCurrentStatusNames.has(status) &&
+    stagesForStatus(status, config).some(s =>
+      (s !== "Won" || v.probability === config.rules.wonProbability) &&
+      (s !== "PO" || v.probability === config.rules.poProbability))) : [];
   const liveHint = config ? crossFieldHint(v, config) : null;
 
   function set<K extends keyof DealFormValues>(key: K, val: DealFormValues[K]) {
@@ -241,7 +249,7 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
             <FF id="dealType" label="Deal Type" required error={errors.dealType}>
               <select value={v.dealType} onChange={(e) => set("dealType", e.target.value)}>
                 <option value="">— เลือก —</option>
-                {config.dealTypes.map((t) => (
+                {typeChoices.map((t) => (
                   <option key={t}>{t}</option>
                 ))}
               </select>
