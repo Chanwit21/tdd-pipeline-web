@@ -278,8 +278,6 @@ tbody tr:hover { background: var(--surface-2); }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr.clickable { cursor: pointer; }
 .cell-strong { font-weight: 700; }
-.cell-accentbar { position: relative; padding-left: 20px; }
-.cell-accentbar::before { content: ""; position: absolute; left: 12px; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--accent); }
 .cell-muted { color: var(--text-muted); }
 .ellipsis { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .empty-row td { text-align: center; color: var(--text-muted); padding: 28px 14px; }
@@ -443,7 +441,7 @@ tbody tr.row-success:hover > td, tbody tr.row-slate:hover > td, tbody tr.row-dan
 .spinner { width: 34px; height: 34px; border: 3px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; margin-bottom: 18px; }
+.dash-cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: start; margin-bottom: 18px; }
 .dash-cols .panel { margin-bottom: 0; }
 
 .subsection-head { font-size: 13px; font-weight: 700; color: var(--text); padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
@@ -505,10 +503,10 @@ td.num, th.amount-cell { text-align: right; }
 .multi-options input { width: auto; accent-color: var(--accent); }
 .subtabs { max-width: 100%; overflow-x: auto; }
 .panel .subtabs { max-width: calc(100% - 36px); }
-.bar-chart { display: grid; gap: 14px; }
-.bar-chart-row { display: grid; grid-template-columns: 70px 1fr 45px; align-items: center; gap: 12px; }
-.bar-track { background: var(--surface-2); border-radius: 6px; height: 20px; overflow: hidden; }
-.bar-fill { background: var(--accent); height: 100%; border-radius: 6px; }
+.bar-chart { display: grid; gap: 18px; padding: 4px 0; }
+.bar-chart-row { display: grid; grid-template-columns: 70px 1fr 45px; align-items: center; gap: 14px; }
+.bar-track { background: var(--surface-2); border-radius: 6px; height: 22px; overflow: hidden; }
+.bar-fill { background: var(--accent); height: 100%; border-radius: 6px; min-width: 3px; }
 .master-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 @media (max-width: 640px) { .filter-grid, .filter-grid.cols-4, .report-filters { grid-template-columns: 1fr; } .modal-backdrop { padding: 12px; } .table-foot { gap: 12px; } .kpi-grid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) {

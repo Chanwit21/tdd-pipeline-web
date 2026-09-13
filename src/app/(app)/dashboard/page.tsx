@@ -64,7 +64,7 @@ export default function DashboardPage() {
       </div>
       <Panel title="Deal ที่เลย Closed Date (Overdue)" extra={<Badge tone="danger">{data?.overdue.length ?? 0} รายการ</Badge>} bodyPad={false}>
         <div className="table-wrap"><table><thead><tr><th className="col-no">No.</th><th>Record ID</th><th>ลูกค้า</th><th>Deal Name</th><th>Department</th><th>Deal Owner</th><th>Closed Date</th><th className="amount-cell">Amount</th><th /></tr></thead><tbody>
-          {data?.overdue.map((r,i) => <tr key={r.id}><td className="col-no">{i+1}</td><td className="cell-strong cell-accentbar">{r.recordId}</td><td>{r.customer}</td><td className="ellipsis" title={r.dealName}>{r.dealName}</td><td><Badge tone="slate">{r.department}</Badge></td><td>{r.dealOwner}</td><td className="date-cell">{formatMonth(r.closedDate)}</td><td className="num">{formatAmount(r.amount)}</td><td><button className="btn btn-sm" onClick={() => router.push(`/pipeline/${r.id}`)}>เปิดแก้ไข</button></td></tr>)}
+          {data?.overdue.map((r,i) => <tr key={r.id}><td className="col-no">{i+1}</td><td className="cell-strong">{r.recordId}</td><td>{r.customer}</td><td className="ellipsis" title={r.dealName}>{r.dealName}</td><td><Badge tone="slate">{r.department}</Badge></td><td>{r.dealOwner}</td><td className="date-cell">{formatMonth(r.closedDate)}</td><td className="num">{formatAmount(r.amount)}</td><td><button className="btn btn-sm" onClick={() => router.push(`/pipeline/${r.id}`)}>เปิดแก้ไข</button></td></tr>)}
           {!data?.overdue.length && <tr className="empty-row"><td colSpan={9}>ไม่มีรายการ Overdue</td></tr>}
         </tbody></table></div>
       </Panel>
