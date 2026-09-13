@@ -8,7 +8,7 @@ import { useMasterConfig, useCreatedYears } from "@/lib/hooks";
 import { formatAmount, formatMonth, formatDate } from "@/lib/format";
 import { stagesForStatuses, withStatusFilter } from "@/lib/validation";
 import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
-import { IcoPipeline, IcoPlus, IcoDownload } from "@/components/icons";
+import { IcoPipeline, IcoPlus, IcoDownload, IcoBell } from "@/components/icons";
 import { DealFormModal } from "@/components/deal/DealFormModal";
 import { MultiCheckbox } from "@/components/MultiCheckbox";
 import { downloadCsv } from "@/lib/export";
@@ -158,6 +158,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         <StatChip on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "PR"} label="PR / PO (หน้านี้)" value={counts.pr} onClick={() => selectStatus(["PR"])} />
         <StatChip on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Inactive"} label="Inactive (หน้านี้)" value={counts.inactive} onClick={() => selectStatus(["Inactive"])} />
         <div className="updates-card">
+          <div className="stat-icon" aria-hidden="true"><IcoBell size={18} /></div>
           <div>
             <b>แจ้งเตือน (หน้านี้)</b>
             <div style={{ color: "var(--text-muted)", fontSize: 11.5, marginTop: 2 }}>
