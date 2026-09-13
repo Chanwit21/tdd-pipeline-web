@@ -13,6 +13,20 @@ export function stagesForStatus(status: string, config: MasterConfig): string[] 
   return config.dealStages.filter((s) => s.allowedFor.includes(status)).map((s) => s.name);
 }
 
+/** Empty filter means all statuses; multiple statuses use the union of their stages. */
+export function stagesForStatuses(statuses: string[], config: MasterConfig): string[] {
+  return config.dealStages
+    .filter(s => !statuses.length || s.allowedFor.some(status => statuses.includes(status)))
+    .map(s => s.name);
+}
+
+export function withStatusFilter<T extends { dealStatus: string[]; dealStage: string[] }>(
+  filters: T, statuses: string[], config: MasterConfig | null,
+): T {
+  const allowed = config ? stagesForStatuses(statuses, config) : [];
+  return { ...filters, dealStatus: statuses, dealStage: filters.dealStage.filter(s => allowed.includes(s)) };
+}
+
 const AMOUNT_RE = /^[0-9,]+(\.[0-9]{1,2})?$/;
 
 export function parseAmount(raw: string): number | null {

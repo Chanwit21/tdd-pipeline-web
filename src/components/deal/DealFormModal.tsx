@@ -85,23 +85,14 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
   }, [config, v.departmentId, deal]);
 
   const situation = config ? situationFor(v.probability, config) : "";
-  const stageOptions = config ? stagesForStatus(v.dealStatus, config).filter(s =>
-    (s !== "Won" || v.probability === config.rules.wonProbability) &&
-    (s !== "PO" || v.probability === config.rules.poProbability)) : [];
-  const statusOptions = config ? config.dealStatuses.filter(status => stagesForStatus(status, config).some(s =>
-    (s !== "Won" || v.probability === config.rules.wonProbability) &&
-    (s !== "PO" || v.probability === config.rules.poProbability))) : [];
+  const stageOptions = config ? stagesForStatus(v.dealStatus, config) : [];
+  const statusOptions = config?.dealStatuses ?? [];
   const liveHint = config ? crossFieldHint(v, config) : null;
 
   function set<K extends keyof DealFormValues>(key: K, val: DealFormValues[K]) {
     setV((prev) => {
       const next = { ...prev, [key]: val };
       if (key === "dealStatus") next.dealStage = "";
-      if (key === "probability" && config) {
-        const allowed = stagesForStatus(next.dealStatus, config).filter(s => (s !== "Won" || next.probability === config.rules.wonProbability) && (s !== "PO" || next.probability === config.rules.poProbability));
-        if (!allowed.includes(next.dealStage)) next.dealStage = "";
-        if (!allowed.length) next.dealStatus = "";
-      }
       return next;
     });
     setErrors((prev) => {
@@ -265,7 +256,7 @@ export function DealFormModal({ target, onClose, onSaved }: Props) {
             </FF>
 
             <FF id="dealStatus" label="Deal Status" required error={errors.dealStatus}>
-              <select disabled={!v.probability} value={v.dealStatus} onChange={(e) => set("dealStatus", e.target.value)}>
+              <select value={v.dealStatus} onChange={(e) => set("dealStatus", e.target.value)}>
                 <option value="">— เลือก —</option>
                 {statusOptions.map((s) => (
                   <option key={s}>{s}</option>
