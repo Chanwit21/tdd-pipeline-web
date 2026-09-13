@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken } from "./api";
+import { invalidateCreatedYears, invalidateClosedYears } from "./hooks";
 import type { CurrentUser } from "./types";
 
 interface AuthState {
@@ -39,6 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setToken(null);
     setUser(null);
+    invalidateCreatedYears();
+    invalidateClosedYears();
     router.push("/login");
   };
 

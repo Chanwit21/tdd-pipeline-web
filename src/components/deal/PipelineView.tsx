@@ -4,10 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useMasterConfig } from "@/lib/hooks";
+import { useMasterConfig, useCreatedYears } from "@/lib/hooks";
 import { formatAmount, formatMonth, formatDate } from "@/lib/format";
 import { stagesForStatuses, withStatusFilter } from "@/lib/validation";
-import { PageHead, FilterBar, Field, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
+import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
 import { IcoPipeline, IcoPlus, IcoDownload } from "@/components/icons";
 import { DealFormModal } from "@/components/deal/DealFormModal";
 import { MultiCheckbox } from "@/components/MultiCheckbox";
@@ -30,6 +30,7 @@ const DEFAULT_FILTERS = {
 export function PipelineView({ initialTarget }: { initialTarget?: number | "new" }) {
   const { user } = useAuth();
   const { config } = useMasterConfig();
+  const createdYears = useCreatedYears();
   const router = useRouter();
   const isAdmin = user?.role === "ADMIN";
 
@@ -182,6 +183,10 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
           </>
         }
       >
+        <Field label="ปีที่สร้าง (Created Date)">
+          <Select value={draft.createdYear} onChange={(v) => setDraft({ ...draft, createdYear: v })} all="ทุกปี"
+            options={createdYears.map((y) => ({ value: String(y), label: String(y) }))} />
+        </Field>
         {isAdmin && (
           <Field label="Department">
             <MultiCheckbox label="Department"
@@ -230,9 +235,6 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         </Field>
         <Field label="ถึง">
           <input type="month" value={draft.closedTo} onChange={(e) => setDraft({ ...draft, closedTo: e.target.value })} />
-        </Field>
-        <Field label="ปีที่สร้าง (Created Date)">
-          <input type="number" min="1900" max="9999" placeholder="ทุกปี" value={draft.createdYear} onChange={e => setDraft({ ...draft, createdYear: e.target.value })} />
         </Field>
       </FilterBar>
 

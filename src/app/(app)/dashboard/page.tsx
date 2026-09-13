@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useMasterConfig } from "@/lib/hooks";
+import { useMasterConfig, useCreatedYears } from "@/lib/hooks";
 import { formatAmount, formatMonth } from "@/lib/format";
 import { downloadCsv } from "@/lib/export";
 import { PageHead, Panel, Field, Select, Badge } from "@/components/ui";
@@ -17,7 +17,7 @@ interface Summary {
 }
 const INITIAL = { departmentId: [] as string[], probability: [] as string[], dealStatus: [] as string[], createdYear: "", quarter: "" };
 export default function DashboardPage() {
-  const { user } = useAuth(); const { config } = useMasterConfig(); const router = useRouter();
+  const { user } = useAuth(); const { config } = useMasterConfig(); const createdYears = useCreatedYears(); const router = useRouter();
   const [draft, setDraft] = useState(INITIAL); const [filters, setFilters] = useState(INITIAL);
   const [data, setData] = useState<Summary | null>(null); const [error, setError] = useState(""); const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -44,14 +44,14 @@ export default function DashboardPage() {
       <form
         className="filter-grid report-filters"
         style={{ paddingBottom: 18 }}
-        onSubmit={(e) => { e.preventDefault(); if (!(!!draft.createdYear && !/^\d{4}$/.test(draft.createdYear))) setFilters(draft); }}
+        onSubmit={(e) => { e.preventDefault(); setFilters(draft); }}
       >
         {user?.role === "ADMIN" && <Field label="Department"><MultiCheckbox label="Department" value={draft.departmentId} onChange={v => setDraft({ ...draft, departmentId: v })} options={(config?.departments ?? []).map(d => ({ value: String(d.id), label: d.code }))} /></Field>}
         <Field label="Deal Status"><MultiCheckbox label="Deal Status" value={draft.dealStatus} onChange={v => setDraft({ ...draft, dealStatus: v })} options={(config?.dealStatuses ?? []).map(s => ({ value: s, label: s }))} /></Field>
         <Field label="Probability"><MultiCheckbox label="Probability" value={draft.probability} onChange={v => setDraft({ ...draft, probability: v })} options={(config?.probabilities ?? []).map(p => ({ value: p.probability, label: p.probability }))} /></Field>
-        <Field label="ปีที่สร้าง (Created Date)"><input type="number" min="1900" max="9999" placeholder="ทุกปี" value={draft.createdYear} onChange={e => setDraft({ ...draft, createdYear: e.target.value })} /></Field>
+        <Field label="ปีที่สร้าง (Created Date)"><Select value={draft.createdYear} onChange={v => setDraft({ ...draft, createdYear: v })} all="ทุกปี" options={createdYears.map(y => ({ value: String(y), label: String(y) }))} /></Field>
         <Field label="ไตรมาสที่สร้าง"><Select value={draft.quarter} onChange={v => setDraft({ ...draft, quarter: v })} all="ทุกไตรมาส" options={[1,2,3,4].map(q => ({ value: String(q), label: `Q${q}` }))} /></Field>
-        <div className="filter-buttons"><button type="submit" className="btn btn-primary btn-sm" disabled={!!draft.createdYear && !/^\d{4}$/.test(draft.createdYear)}>กรอง</button><button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDraft(INITIAL); setFilters(INITIAL); }}>ล้างค่า</button></div>
+        <div className="filter-buttons"><button type="submit" className="btn btn-primary btn-sm">กรอง</button><button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDraft(INITIAL); setFilters(INITIAL); }}>ล้างค่า</button></div>
       </form>
     </div>
     {error && <div className="warn-banner" role="alert">{error}</div>}
