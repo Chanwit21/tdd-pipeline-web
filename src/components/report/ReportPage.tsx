@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMasterConfig, useClosedYears } from "@/lib/hooks";
-import { stagesForStatus } from "@/lib/validation";
+import { stagesForStatuses, withStatusFilter } from "@/lib/validation";
 import { formatAmount } from "@/lib/format";
 import { downloadCsv } from "@/lib/export";
 import { PageHead, Field, Select, Subtabs } from "@/components/ui";
@@ -20,11 +20,7 @@ export function ReportPage({ report }: { report: ReportKey }) {
   const [tick, setTick] = useState(0); const [data, setData] = useState<PivotReport | null>(null);
   const [loading, setLoading] = useState(true); const [error, setError] = useState("");
   const admin = user?.role === "ADMIN";
-  const stageNames = config
-    ? draft.dealStatus.length
-      ? Array.from(new Set(draft.dealStatus.flatMap((s) => stagesForStatus(s, config))))
-      : config.dealStages.map((s) => s.name)
-    : [];
+  const stageNames = config ? stagesForStatuses(draft.dealStatus, config) : [];
   const stageOpts = stageNames.map((name) => ({ value: name, label: name }));
   useEffect(() => {
     let current = true; setLoading(true); setError("");
@@ -59,10 +55,7 @@ export function ReportPage({ report }: { report: ReportKey }) {
         <Field label="ปี (Closed Date)"><Select value={draft.year} onChange={v => setDraft({ ...draft, year: v })} options={closedYears.map(y => ({ value: String(y), label: String(y) }))} /></Field>
         {admin && <Field label="Department"><MultiCheckbox label="Department" value={draft.departmentId} onChange={v => setDraft({ ...draft, departmentId: v })} options={(config?.departments ?? []).map(d => ({ value: String(d.id), label: d.code }))} /></Field>}
         {report === "pipeline-by-team" && <Field label="Probability"><MultiCheckbox label="Probability" value={draft.probability} onChange={v => setDraft({ ...draft, probability: v })} options={(config?.probabilities ?? []).map(p => ({ value: p.probability, label: p.probability }))} /></Field>}
-        {report !== "pr-by-team" && <Field label="Deal Status"><MultiCheckbox label="Deal Status" value={draft.dealStatus} onChange={v => {
-          const allowed = v.length ? new Set(v.flatMap((s) => (config ? stagesForStatus(s, config) : []))) : null;
-          setDraft({ ...draft, dealStatus: v, dealStage: allowed ? draft.dealStage.filter((s) => allowed.has(s)) : draft.dealStage });
-        }} options={(config?.dealStatuses ?? []).map(s => ({ value: s, label: s }))} /></Field>}
+        {report !== "pr-by-team" && <Field label="Deal Status"><MultiCheckbox label="Deal Status" value={draft.dealStatus} onChange={v => setDraft(d => withStatusFilter(d, v, config))} options={(config?.dealStatuses ?? []).map(s => ({ value: s, label: s }))} /></Field>}
         {report === "pipeline-by-team" && <Field label="Deal Stage"><MultiCheckbox label="Deal Stage" value={draft.dealStage} onChange={v => setDraft({ ...draft, dealStage: v })} options={stageOpts} /></Field>}
         <div className="filter-buttons">
           <button type="submit" className="btn btn-primary btn-sm" disabled={!/^\d{4}$/.test(draft.year)}>Refresh</button>

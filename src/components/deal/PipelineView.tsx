@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMasterConfig, useCreatedYears } from "@/lib/hooks";
 import { formatAmount, formatMonth, formatDate } from "@/lib/format";
-import { stagesForStatus } from "@/lib/validation";
+import { stagesForStatuses, withStatusFilter } from "@/lib/validation";
 import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
 import { IcoPipeline, IcoPlus, IcoDownload } from "@/components/icons";
 import { DealFormModal } from "@/components/deal/DealFormModal";
@@ -98,8 +98,8 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
     setSelected([]);
   }
   function selectStatus(statuses: string[]) {
-    setDraft((d) => ({ ...d, dealStatus: statuses }));
-    setFilters((f) => ({ ...f, dealStatus: statuses }));
+    setDraft((d) => withStatusFilter(d, statuses, config));
+    setFilters((f) => withStatusFilter(f, statuses, config));
     setPage(1);
     setSelected([]);
   }
@@ -134,11 +134,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   // Deal Stage options narrow to whatever's reachable from the selected Deal Status filter(s),
   // same relationship the Deal form already enforces — avoids offering combinations that can
   // never match anything (e.g. "Won" while only "PR" is selected).
-  const stageNames = config
-    ? draft.dealStatus.length
-      ? Array.from(new Set(draft.dealStatus.flatMap((s) => stagesForStatus(s, config))))
-      : config.dealStages.map((s) => s.name)
-    : [];
+  const stageNames = config ? stagesForStatuses(draft.dealStatus, config) : [];
   const stageOpts = stageNames.map((name) => ({ value: name, label: name }));
 
   return (
@@ -203,16 +199,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         <Field label="Deal Status">
           <MultiCheckbox label="Deal Status"
             value={draft.dealStatus}
-            onChange={(v) => {
-              const allowed = v.length
-                ? new Set(v.flatMap((s) => (config ? stagesForStatus(s, config) : [])))
-                : null;
-              setDraft({
-                ...draft,
-                dealStatus: v,
-                dealStage: allowed ? draft.dealStage.filter((s) => allowed.has(s)) : draft.dealStage,
-              });
-            }}
+            onChange={(v) => setDraft(d => withStatusFilter(d, v, config))}
             options={(config?.dealStatuses ?? []).map((s) => ({ value: s, label: s }))}
           />
         </Field>
