@@ -1,4 +1,5 @@
 "use client";
+import "./dashboard-tailwind.css";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -9,6 +10,10 @@ import { downloadCsv } from "@/lib/export";
 import { PageHead, Panel, Field, Select, Badge } from "@/components/ui";
 import { MultiCheckbox } from "@/components/MultiCheckbox";
 import { IcoDownload } from "@/components/icons";
+import { KpiCard } from "@/components/dashboard/KpiCard";
+import { ChartCard } from "@/components/dashboard/ChartCard";
+import { DepartmentBarChart } from "@/components/dashboard/DepartmentBarChart";
+import { YearTrendChart } from "@/components/dashboard/YearTrendChart";
 interface Summary {
   statCards: { totalPipelineAmount: number; bestCaseAmount: number; wonAmount: number; activeDealCount: number };
   overdue: { id: number; recordId: string; customer: string; dealName: string; department: string; dealOwner: string; closedDate: string; amount: number }[];
@@ -56,11 +61,21 @@ export default function DashboardPage() {
     </div>
     {error && <div className="warn-banner" role="alert">{error}</div>}
     {loading ? <div className="panel panel-body">กำลังโหลด…</div> : <>
-      <div className="kpi-grid">
-        <Kpi icon="฿" tone="info" label="Total Pipeline Amount" value={formatAmount(s?.totalPipelineAmount)} sub={`รวม ${s?.activeDealCount ?? 0} ดีล Active`} />
-        <Kpi icon="✓" tone="success" label="Best Case Amount" value={formatAmount(s?.bestCaseAmount)} sub="Probability 75% ขึ้นไป" />
-        <Kpi icon="🏆" tone="accent" label="Won / PO เดือนนี้" value={formatAmount(s?.wonAmount)} sub="Closed Date เดือนปัจจุบัน ภายใต้ตัวกรอง" />
-        <Kpi icon="!" tone="danger" label="Overdue Follow Up" value={String(data?.overdue.length ?? 0)} sub="ดีลที่ต้องติดตาม" />
+      <div className="dashboard-shadcn-scope mb-[18px] flex flex-col gap-[18px]">
+        <div className="flex flex-col gap-[14px] sm:flex-row">
+          <KpiCard icon="฿" tone="info" label="Total Pipeline Amount" value={formatAmount(s?.totalPipelineAmount)} sub={`รวม ${s?.activeDealCount ?? 0} ดีล Active`} />
+          <KpiCard icon="✓" tone="success" label="Best Case Amount" value={formatAmount(s?.bestCaseAmount)} sub="Probability 75% ขึ้นไป" />
+          <KpiCard icon="🏆" tone="accent" label="Won / PO เดือนนี้" value={formatAmount(s?.wonAmount)} sub="Closed Date เดือนปัจจุบัน ภายใต้ตัวกรอง" />
+          <KpiCard icon="!" tone="danger" label="Overdue Follow Up" value={String(data?.overdue.length ?? 0)} sub="ดีลที่ต้องติดตาม" />
+        </div>
+        <div className="flex flex-col gap-[18px] lg:flex-row">
+          <ChartCard title="จำนวน Deal ที่ Active แยกทีม">
+            <DepartmentBarChart data={data?.byDepartment ?? []} />
+          </ChartCard>
+          <ChartCard title="สรุปตามปีที่สร้าง — จำนวนดีล (แท่ง) และ Amount (เส้น)">
+            <YearTrendChart data={data?.byYear ?? []} />
+          </ChartCard>
+        </div>
       </div>
       <Panel title="Deal ที่เลย Closed Date (Overdue)" extra={<Badge tone="danger">{data?.overdue.length ?? 0} รายการ</Badge>} bodyPad={false}>
         <div className="table-wrap"><table><thead><tr><th className="col-no">No.</th><th>Record ID</th><th>ลูกค้า</th><th>Deal Name</th><th>Department</th><th>Deal Owner</th><th>Closed Date</th><th className="amount-cell">Amount</th><th /></tr></thead><tbody>
@@ -68,35 +83,14 @@ export default function DashboardPage() {
           {!data?.overdue.length && <tr className="empty-row"><td colSpan={9}>ไม่มีรายการ Overdue</td></tr>}
         </tbody></table></div>
       </Panel>
-      <div className="dash-cols">
-        <Panel title="สรุป Pipeline แยกตามแผนก (Active)" bodyPad={false}>
-          <div className="table-wrap"><table className="pivot"><thead><tr><th className="col-no">No.</th><th>Department</th><th>จำนวนดีล</th><th>Sum of Amount</th><th>Best Case</th><th>Won / PO เดือนนี้</th></tr></thead><tbody>
-            {data?.byDepartment.map((r,i) => <tr key={r.department}><td className="col-no">{i+1}</td><td>{r.department}</td><td className="num">{r.dealCount}</td><td className="num">{formatAmount(r.amount)}</td><td className="num">{formatAmount(r.bestCase)}</td><td className="num">{formatAmount(r.wonAmount)}</td></tr>)}
-            {!!data?.byDepartment.length && <tr className="total"><td className="col-no"></td><td>Grand Total</td>{(["dealCount","amount","bestCase","wonAmount"] as const).map(k => <td className="num" key={k}>{formatAmount(data.byDepartment.reduce((n,r) => n+r[k],0))}</td>)}</tr>}
-            {!data?.byDepartment.length && <tr className="empty-row"><td colSpan={6}>ไม่พบข้อมูล</td></tr>}
-          </tbody></table></div>
-        </Panel>
-        <Panel title="จำนวน Deal ที่ Active แยกทีม">
-          <div className="bar-chart">{data?.byDepartment.map(r => <div className="bar-chart-row" key={r.department}><b>{r.department}</b><div className="bar-track" role="img" aria-label={`${r.department}: ${r.dealCount} deals`}><div className="bar-fill" style={{ width: `${100*r.dealCount/Math.max(1,...data.byDepartment.map(d=>d.dealCount))}%` }} /></div><span className="num">{r.dealCount}</span></div>)}{!data?.byDepartment.length && <span>ไม่พบข้อมูล</span>}</div>
-        </Panel>
-      </div>
-      <Panel title="สรุปตามปีที่สร้าง — ทุกปีภายใต้ตัวกรองแผนก/สถานะ/Probability">
-        <div className="bar-chart">
-          {data?.byYear.map(r => (
-            <div className="bar-chart-row" style={{ gridTemplateColumns: "116px 1fr 40px 120px" }} key={r.year}>
-              <b>{r.year}{r.year === new Date().getFullYear() ? " (ปีปัจจุบัน)" : ""}</b>
-              <div className="bar-track" role="img" aria-label={`${r.year}: ${r.dealCount} deals, ${formatAmount(r.amount)} บาท`}>
-                <div className="bar-fill" style={{ width: `${100 * r.dealCount / Math.max(1, ...data.byYear.map(d => d.dealCount))}%` }} />
-              </div>
-              <span className="num">{r.dealCount}</span>
-              <span className="num cell-muted" style={{ textAlign: "right" }}>{formatAmount(r.amount)}</span>
-            </div>
-          ))}
-          {!data?.byYear.length && <span>ไม่พบข้อมูล</span>}
-        </div>
+      <Panel title="สรุป Pipeline แยกตามแผนก (Active)" bodyPad={false}>
+        <div className="table-wrap"><table className="pivot"><thead><tr><th className="col-no">No.</th><th>Department</th><th>จำนวนดีล</th><th>Sum of Amount</th><th>Best Case</th><th>Won / PO เดือนนี้</th></tr></thead><tbody>
+          {data?.byDepartment.map((r,i) => <tr key={r.department}><td className="col-no">{i+1}</td><td>{r.department}</td><td className="num">{r.dealCount}</td><td className="num">{formatAmount(r.amount)}</td><td className="num">{formatAmount(r.bestCase)}</td><td className="num">{formatAmount(r.wonAmount)}</td></tr>)}
+          {!!data?.byDepartment.length && <tr className="total"><td className="col-no"></td><td>Grand Total</td>{(["dealCount","amount","bestCase","wonAmount"] as const).map(k => <td className="num" key={k}>{formatAmount(data.byDepartment.reduce((n,r) => n+r[k],0))}</td>)}</tr>}
+          {!data?.byDepartment.length && <tr className="empty-row"><td colSpan={6}>ไม่พบข้อมูล</td></tr>}
+        </tbody></table></div>
       </Panel>
     </>}
   </div>;
 }
-function Kpi({label,value,sub,icon,tone}:{label:string;value:string;sub:string;icon:string;tone:string}) { return <div className="kpi-card"><div className="kpi-top"><span>{label}</span><div className="kpi-ico" aria-hidden="true" style={{background:`var(--${tone}-weak)`,color:`var(--${tone})`}}>{icon}</div></div><div className="kpi-val num">{value}</div><div className="kpi-sub">{sub}</div></div>; }
 
