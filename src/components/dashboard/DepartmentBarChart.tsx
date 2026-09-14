@@ -25,9 +25,10 @@ export function DepartmentBarChart({ data }: { data: { department: string; dealC
         <ChartTooltip content={<ChartTooltipContent formatter={(v) => `${v} ดีล`} />} cursor={{ fill: "#fff0e2" }} />
         <Bar dataKey="dealCount" fill="url(#dept-gradient)" radius={[0, 8, 8, 0]} barSize={18} />
         <defs>
+          {/* Same gradient as the KPI accent icon chip, for visual consistency */}
           <linearGradient id="dept-gradient" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#ff7a1f" />
-            <stop offset="100%" stopColor="#ffb066" />
+            <stop offset="100%" stopColor="#ff9c4d" />
           </linearGradient>
         </defs>
       </BarChart>

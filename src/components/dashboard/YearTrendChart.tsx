@@ -9,6 +9,12 @@ const config: ChartConfig = {
   amount: { label: "Amount", color: "hsl(var(--chart-2))" },
 };
 
+// Amount uses the brand's info-blue (already used on the Total Pipeline KPI
+// card) so it reads clearly against the orange dealCount bars — same
+// overall brand palette, just paired for contrast instead of orange-on-orange.
+const BAR_COLOR = "#ffcfa0";
+const LINE_COLOR = "#2058c9";
+
 export function YearTrendChart({ data }: { data: { year: number; dealCount: number; amount: number }[] }) {
   if (!data.length) return <span className="text-sm text-[#6c7486]">ไม่พบข้อมูล</span>;
   return (
@@ -22,14 +28,14 @@ export function YearTrendChart({ data }: { data: { year: number; dealCount: numb
           content={<ChartTooltipContent formatter={(v, key) => (key === "amount" ? formatAmount(v) : `${v} ดีล`)} />}
           cursor={{ fill: "#fff0e2" }}
         />
-        <Bar yAxisId="count" dataKey="dealCount" fill="#ffcfa0" radius={[6, 6, 0, 0]} barSize={22} />
+        <Bar yAxisId="count" dataKey="dealCount" fill={BAR_COLOR} radius={[6, 6, 0, 0]} barSize={22} />
         <Line
           yAxisId="amount"
           dataKey="amount"
           type="monotone"
-          stroke="#ff7a1f"
+          stroke={LINE_COLOR}
           strokeWidth={2.5}
-          dot={{ r: 3, fill: "#ff7a1f", strokeWidth: 0 }}
+          dot={{ r: 3.5, fill: LINE_COLOR, strokeWidth: 2, stroke: "#fff" }}
         />
       </ComposedChart>
     </ChartContainer>

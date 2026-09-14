@@ -61,14 +61,14 @@ export default function DashboardPage() {
     </div>
     {error && <div className="warn-banner" role="alert">{error}</div>}
     {loading ? <div className="panel panel-body">กำลังโหลด…</div> : <>
-      <div className="dashboard-shadcn-scope flex flex-col gap-3">
-        <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="dashboard-shadcn-scope mb-[18px] flex flex-col gap-[18px]">
+        <div className="flex flex-col gap-[14px] sm:flex-row">
           <KpiCard icon="฿" tone="info" label="Total Pipeline Amount" value={formatAmount(s?.totalPipelineAmount)} sub={`รวม ${s?.activeDealCount ?? 0} ดีล Active`} />
           <KpiCard icon="✓" tone="success" label="Best Case Amount" value={formatAmount(s?.bestCaseAmount)} sub="Probability 75% ขึ้นไป" />
           <KpiCard icon="🏆" tone="accent" label="Won / PO เดือนนี้" value={formatAmount(s?.wonAmount)} sub="Closed Date เดือนปัจจุบัน ภายใต้ตัวกรอง" />
           <KpiCard icon="!" tone="danger" label="Overdue Follow Up" value={String(data?.overdue.length ?? 0)} sub="ดีลที่ต้องติดตาม" />
         </div>
-        <div className="flex flex-col gap-3 lg:flex-row">
+        <div className="flex flex-col gap-[18px] lg:flex-row">
           <ChartCard title="จำนวน Deal ที่ Active แยกทีม">
             <DepartmentBarChart data={data?.byDepartment ?? []} />
           </ChartCard>
