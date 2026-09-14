@@ -1,6 +1,6 @@
 import type { FieldError } from "./types";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080").replace(/\/$/, "");
 const TOKEN_KEY = "tdd_token";
 
 export function getToken(): string | null {
@@ -31,7 +31,7 @@ interface RequestOptions {
 }
 
 export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const url = new URL(BASE + path);
+  const url = new URL(API_BASE + path);
   if (opts.query) {
     for (const [k, v] of Object.entries(opts.query)) {
       if (v === undefined || v === null || v === "") continue;
