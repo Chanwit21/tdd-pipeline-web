@@ -112,4 +112,5 @@ export interface AdminUser {
   departmentId: number | null;
   departmentCode: string | null;
   active: boolean;
+  email: string | null;
 }
