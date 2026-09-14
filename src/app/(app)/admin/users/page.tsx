@@ -16,6 +16,7 @@ interface FormState {
   role: "MANAGER" | "ADMIN";
   departmentId: number | null;
   active: boolean;
+  email: string;
 }
 
 const EMPTY: FormState = {
@@ -26,6 +27,7 @@ const EMPTY: FormState = {
   role: "MANAGER",
   departmentId: null,
   active: true,
+  email: "",
 };
 
 export default function UserManagementPage() {
@@ -56,6 +58,7 @@ export default function UserManagementPage() {
         role: form.role,
         departmentId: form.role === "MANAGER" ? form.departmentId : null,
         active: form.active,
+        email: form.email || null,
       };
       if (form.id) await api(`/api/admin/users/${form.id}`, { method: "PUT", body });
       else await api("/api/admin/users", { method: "POST", body });
@@ -82,6 +85,15 @@ export default function UserManagementPage() {
       load();
     } catch (e) {
       toast.push(e instanceof ApiError ? e.message : "อัปเดตไม่สำเร็จ", "error");
+    }
+  }
+
+  async function resendInvite(u: AdminUser) {
+    try {
+      await api(`/api/admin/users/${u.id}/resend-invite`, { method: "POST" });
+      toast.push(`ส่ง invite ให้ ${u.username} อีกครั้งแล้ว`, "success");
+    } catch (e) {
+      toast.push(e instanceof ApiError ? e.message : "ส่ง invite ไม่สำเร็จ", "error");
     }
   }
 
@@ -114,6 +126,7 @@ export default function UserManagementPage() {
                 <th>Role</th>
                 <th>แผนก</th>
                 <th>สถานะ</th>
+                <th>Azure AD</th>
                 <th>เข้าใช้ล่าสุด</th>
                 <th></th>
               </tr>
@@ -130,6 +143,18 @@ export default function UserManagementPage() {
                   <td>{u.departmentCode ? <Badge tone="slate">{u.departmentCode}</Badge> : <span className="cell-muted">ทุกแผนก</span>}</td>
                   <td>
                     <Badge tone={u.active ? "success" : "slate"}>{u.active ? "Active" : "Inactive"}</Badge>
+                  </td>
+                  <td>
+                    {u.email && !u.lastLoginAt ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Badge tone="warning">รอเข้าใช้งานครั้งแรก</Badge>
+                        <button className="linkbtn" onClick={() => resendInvite(u)}>ส่งอีกครั้ง</button>
+                      </span>
+                    ) : u.email ? (
+                      <Badge tone="success">Active</Badge>
+                    ) : (
+                      <span className="cell-muted">—</span>
+                    )}
                   </td>
                   <td className="date-cell cell-muted">{u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "—"}</td>
                   <td style={{ textAlign: "right" }}>
@@ -149,6 +174,7 @@ export default function UserManagementPage() {
                           role: u.role,
                           departmentId: u.departmentId,
                           active: u.active,
+                          email: u.email ?? "",
                         });
                       }}
                     >
@@ -188,13 +214,20 @@ export default function UserManagementPage() {
                 </UF>
                 <UF
                   id="password"
-                  label={form.id ? "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)" : "รหัสผ่าน (≥ 8 ตัว)"}
+                  label={form.id ? "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)" : "รหัสผ่าน (เว้นว่างได้ถ้ากรอกอีเมล)"}
                   error={errors.password}
                 >
                   <input
                     type="password"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  />
+                </UF>
+                <UF id="email" label="อีเมล (สำหรับ Sign in with Microsoft)" error={errors.email}>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
                 </UF>
                 <UF id="role" label="Role" error={errors.role}>
