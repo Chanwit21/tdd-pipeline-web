@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { ApiError, API_BASE } from "@/lib/api";
 
 const AZURE_ERROR_MESSAGES: Record<string, string> = {
-  "AZURE-NO-ACCOUNT": "ไม่พบบัญชีผู้ใช้ที่ตรงกับอีเมลนี้ในระบบ — ติดต่อ Admin เพื่อสร้างบัญชีก่อน",
+  "AZURE-NO-ACCOUNT": "ไม่สามารถเข้าสู่ระบบด้วยบัญชีนี้ได้ — ติดต่อ Admin",
   "AZURE-STATE-INVALID": "เซสชันการเข้าสู่ระบบหมดอายุหรือถูกใช้ไปแล้ว กรุณาลองใหม่อีกครั้ง",
   "AZURE-TOKEN-EXCHANGE-FAILED": "เข้าสู่ระบบด้วย Microsoft ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
   "AZURE-NOT-CONFIGURED": "ยังไม่ได้ตั้งค่า Azure AD สำหรับสภาพแวดล้อมนี้",
@@ -24,6 +24,7 @@ export default function LoginPage() {
     const azureError = params.get("error");
     if (azureError) {
       setError(AZURE_ERROR_MESSAGES[azureError] || "เข้าสู่ระบบด้วย Microsoft ไม่สำเร็จ");
+      window.history.replaceState({}, "", "/login");
       return;
     }
     if (params.get("method") === "azure") {

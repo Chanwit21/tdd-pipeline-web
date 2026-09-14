@@ -37,6 +37,7 @@ export default function UserManagementPage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [resendingId, setResendingId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const size = 10;
   const currentPage = Math.min(page, Math.max(1, Math.ceil(users.length / size)));
@@ -60,9 +61,13 @@ export default function UserManagementPage() {
         active: form.active,
         email: form.email || null,
       };
-      if (form.id) await api(`/api/admin/users/${form.id}`, { method: "PUT", body });
-      else await api("/api/admin/users", { method: "POST", body });
+      const result = form.id
+        ? await api<{ emailSent?: boolean }>(`/api/admin/users/${form.id}`, { method: "PUT", body })
+        : await api<{ emailSent?: boolean }>("/api/admin/users", { method: "POST", body });
       toast.push("บันทึกผู้ใช้สำเร็จ", "success");
+      if (result.emailSent === false) {
+        toast.push(`บันทึกสำเร็จ แต่ส่งอีเมล invite ให้ ${form.username} ไม่สำเร็จ — กด "ส่งอีกครั้ง" ที่ตารางภายหลัง`, "error");
+      }
       setForm(null);
       load();
     } catch (e) {
@@ -70,7 +75,8 @@ export default function UserManagementPage() {
         const map: Record<string, string> = {};
         (e.errors as FieldError[]).forEach((x) => x.field && (map[x.field] = x.message));
         setErrors(map);
-        toast.push("ตรวจสอบข้อมูลในฟอร์ม", "error");
+        if (Object.keys(map).length > 0) toast.push("ตรวจสอบข้อมูลในฟอร์ม", "error");
+        else toast.push(e.message, "error");
       } else {
         toast.push(e instanceof ApiError ? e.message : "บันทึกไม่สำเร็จ", "error");
       }
@@ -89,11 +95,15 @@ export default function UserManagementPage() {
   }
 
   async function resendInvite(u: AdminUser) {
+    setResendingId(u.id);
     try {
-      await api(`/api/admin/users/${u.id}/resend-invite`, { method: "POST" });
-      toast.push(`ส่ง invite ให้ ${u.username} อีกครั้งแล้ว`, "success");
+      const result = await api<{ emailSent?: boolean }>(`/api/admin/users/${u.id}/resend-invite`, { method: "POST" });
+      if (result.emailSent === false) toast.push(`ส่ง invite ให้ ${u.username} ไม่สำเร็จ`, "error");
+      else toast.push(`ส่ง invite ให้ ${u.username} อีกครั้งแล้ว`, "success");
     } catch (e) {
       toast.push(e instanceof ApiError ? e.message : "ส่ง invite ไม่สำเร็จ", "error");
+    } finally {
+      setResendingId(null);
     }
   }
 
@@ -148,10 +158,17 @@ export default function UserManagementPage() {
                     {u.email && !u.lastLoginAt ? (
                       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <Badge tone="warning">รอเข้าใช้งานครั้งแรก</Badge>
-                        <button className="linkbtn" onClick={() => resendInvite(u)}>ส่งอีกครั้ง</button>
+                        <button
+                          className="linkbtn"
+                          aria-label={`ส่ง invite ให้ ${u.username} อีกครั้ง`}
+                          disabled={resendingId === u.id}
+                          onClick={() => resendInvite(u)}
+                        >
+                          {resendingId === u.id ? "กำลังส่ง…" : "ส่งอีกครั้ง"}
+                        </button>
                       </span>
                     ) : u.email ? (
-                      <Badge tone="success">Active</Badge>
+                      <Badge tone="success">เข้าใช้งานแล้ว</Badge>
                     ) : (
                       <span className="cell-muted">—</span>
                     )}

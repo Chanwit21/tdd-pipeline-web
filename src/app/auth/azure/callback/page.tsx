@@ -14,9 +14,9 @@ export default function AzureCallbackPage() {
     if (token) {
       setToken(token);
       window.history.replaceState({}, "", "/auth/azure/callback");
-      router.push("/dashboard");
+      window.location.replace("/dashboard");
     } else {
-      router.push("/login");
+      router.push("/login?error=AZURE-TOKEN-EXCHANGE-FAILED");
     }
   }, [router]);
 
