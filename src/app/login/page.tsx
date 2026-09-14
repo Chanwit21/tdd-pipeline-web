@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { ApiError } from "@/lib/api";
+import { ApiError, API_BASE } from "@/lib/api";
+
+const AZURE_ERROR_MESSAGES: Record<string, string> = {
+  "AZURE-NO-ACCOUNT": "ไม่พบบัญชีผู้ใช้ที่ตรงกับอีเมลนี้ในระบบ — ติดต่อ Admin เพื่อสร้างบัญชีก่อน",
+  "AZURE-STATE-INVALID": "เซสชันการเข้าสู่ระบบหมดอายุหรือถูกใช้ไปแล้ว กรุณาลองใหม่อีกครั้ง",
+  "AZURE-TOKEN-EXCHANGE-FAILED": "เข้าสู่ระบบด้วย Microsoft ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+  "AZURE-NOT-CONFIGURED": "ยังไม่ได้ตั้งค่า Azure AD สำหรับสภาพแวดล้อมนี้",
+  "AZURE-SIGNIN-CANCELLED": "การเข้าสู่ระบบด้วย Microsoft ถูกยกเลิก",
+};
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -10,6 +18,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const azureError = params.get("error");
+    if (azureError) {
+      setError(AZURE_ERROR_MESSAGES[azureError] || "เข้าสู่ระบบด้วย Microsoft ไม่สำเร็จ");
+      return;
+    }
+    if (params.get("method") === "azure") {
+      window.location.href = `${API_BASE}/api/auth/azure/login`;
+    }
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +109,15 @@ export default function LoginPage() {
               {busy ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
             </button>
           </form>
+
+          <div className="login-divider">หรือ</div>
+          <a
+            className="btn-login"
+            style={{ display: "block", textAlign: "center", textDecoration: "none" }}
+            href={`${API_BASE}/api/auth/azure/login`}
+          >
+            Sign in with Microsoft
+          </a>
 
           <div className="login-divider">demo</div>
           <div className="login-role-hint">
