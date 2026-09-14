@@ -240,11 +240,12 @@ export default function UserManagementPage() {
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                   />
                 </UF>
-                <UF id="email" label="อีเมล (สำหรับ Sign in with Microsoft)" error={errors.email}>
+                <UF id="email" label="อีเมล (สำหรับ Sign in with Microsoft — ต้องเป็น @g-able.com)" error={errors.email}>
                   <input
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="name@g-able.com"
                   />
                 </UF>
                 <UF id="role" label="Role" error={errors.role}>
