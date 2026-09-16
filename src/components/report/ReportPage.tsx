@@ -58,7 +58,7 @@ export function ReportPage({ report }: { report: ReportKey }) {
         {report !== "pr-by-team" && <Field label="Deal Status"><MultiCheckbox label="Deal Status" value={draft.dealStatus} onChange={v => setDraft(d => withStatusFilter(d, v, config))} options={(config?.dealStatuses ?? []).map(s => ({ value: s, label: s }))} /></Field>}
         {report === "pipeline-by-team" && <Field label="Deal Stage"><MultiCheckbox label="Deal Stage" value={draft.dealStage} onChange={v => setDraft({ ...draft, dealStage: v })} options={stageOpts} /></Field>}
         <div className="filter-buttons">
-          <button type="submit" className="btn btn-primary btn-sm" disabled={!/^\d{4}$/.test(draft.year)}>Refresh</button>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={!/^\d{4}$/.test(draft.year)}>ค้นหา</button>
           <button type="button" className="btn btn-sm" disabled={loading || !data} onClick={exportReport}>↓ Export</button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDraft(INITIAL); setFilters(INITIAL); }}>ล้างค่า</button>
         </div>
