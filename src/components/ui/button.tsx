@@ -3,7 +3,12 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "./cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
+  // appearance-none + border-0 + explicit bg-transparent: preflight is off
+  // app-wide (ADR-0009/Task 11), so a bare <button> otherwise inherits the
+  // browser's native chrome (background, border, padding) underneath these
+  // utility classes — every variant below must set its own bg/border on
+  // top of this reset, never rely on the browser default being invisible.
+  "inline-flex cursor-pointer appearance-none items-center justify-center gap-2 rounded-lg border-0 bg-transparent font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
   {
     variants: {
       variant: {
