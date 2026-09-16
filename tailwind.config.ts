@@ -12,19 +12,6 @@ const config: Config = {
   corePlugins: {
     preflight: false,
   },
-  theme: {
-    extend: {
-      colors: {
-        border: "hsl(var(--dash-border))",
-        card: "hsl(var(--dash-card))",
-      },
-      borderRadius: {
-        lg: "16px",
-        md: "12px",
-        sm: "8px",
-      },
-    },
-  },
   plugins: [],
 };
 export default config;
