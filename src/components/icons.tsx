@@ -78,3 +78,28 @@ export const IcoMenu = ({ size }: P) => (
     <path d="M4 6h16M4 12h16M4 18h16" />
   </svg>
 );
+export const IcoTrendUp = ({ size }: P) => (
+  <svg {...s(size)}>
+    <path d="M3 17l6-6 4 4 8-8" />
+    <path d="M15 7h6v6" />
+  </svg>
+);
+export const IcoCheckCircle = ({ size }: P) => (
+  <svg {...s(size)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8 12.5l2.5 2.5L16 9" />
+  </svg>
+);
+export const IcoArchive = ({ size }: P) => (
+  <svg {...s(size)}>
+    <rect x="3" y="4" width="18" height="4" rx="1" />
+    <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" />
+    <path d="M10 13h4" />
+  </svg>
+);
+export const IcoSearch = ({ size }: P) => (
+  <svg {...s(size)}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3" />
+  </svg>
+);
