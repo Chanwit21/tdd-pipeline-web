@@ -9,7 +9,7 @@ import { formatAmount, formatMonth, formatDate } from "@/lib/format";
 import { stagesForStatuses, withStatusFilter } from "@/lib/validation";
 import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
 import { Card } from "@/components/ui/card";
-import { IcoPipeline, IcoPlus, IcoDownload, IcoBell } from "@/components/icons";
+import { IcoPipeline, IcoPlus, IcoDownload, IcoBell, IcoTrendUp, IcoCheckCircle, IcoArchive, IcoSearch } from "@/components/icons";
 import { DealFormModal } from "@/components/deal/DealFormModal";
 import { DepartmentBreakdownDialog } from "@/components/deal/DepartmentBreakdownDialog";
 import { MultiCheckbox } from "@/components/MultiCheckbox";
@@ -182,22 +182,22 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
       <div className="flex flex-wrap items-stretch gap-4">
         <StatCard
           on={filters.dealStatus.length === 0}
-          label="ทั้งหมด" tone="#F2661C" bucket={deptBreakdown.total}
+          label="ทั้งหมด" tone="#F2661C" bucket={deptBreakdown.total} icon={<IcoPipeline size={16} />}
           onClick={() => selectStatus([])} onViewAll={() => setDeptModal("total")}
         />
         <StatCard
           on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Follow Up"}
-          label="Follow Up (หน้านี้)" tone="#2E6BE6" bucket={deptBreakdown.followUp}
+          label="Follow Up (หน้านี้)" tone="#2E6BE6" bucket={deptBreakdown.followUp} icon={<IcoTrendUp size={16} />}
           onClick={() => selectStatus(["Follow Up"])} onViewAll={() => setDeptModal("followUp")}
         />
         <StatCard
           on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "PR"}
-          label="PR / PO (หน้านี้)" tone="#1A9A5B" bucket={deptBreakdown.pr}
+          label="PR / PO (หน้านี้)" tone="#1A9A5B" bucket={deptBreakdown.pr} icon={<IcoCheckCircle size={16} />}
           onClick={() => selectStatus(["PR"])} onViewAll={() => setDeptModal("pr")}
         />
         <StatCard
           on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Inactive"}
-          label="Inactive (หน้านี้)" tone="#6B7280" bucket={deptBreakdown.inactive}
+          label="Inactive (หน้านี้)" tone="#6B7280" bucket={deptBreakdown.inactive} icon={<IcoArchive size={16} />}
           onClick={() => selectStatus(["Inactive"])} onViewAll={() => setDeptModal("inactive")}
         />
         <div className="updates-card">
@@ -226,7 +226,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         actions={
           <>
             <button type="submit" className="btn btn-primary btn-sm">
-              🔍 ค้นหา
+              <IcoSearch size={14} /> ค้นหา
             </button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={reset}>
               ล้างค่า
@@ -410,6 +410,7 @@ function StatCard({
   label,
   tone,
   bucket,
+  icon,
   on,
   onClick,
   onViewAll,
@@ -417,6 +418,7 @@ function StatCard({
   label: string;
   tone: string;
   bucket: { total: number; counts: Record<string, number> };
+  icon: React.ReactNode;
   on?: boolean;
   onClick?: () => void;
   onViewAll: () => void;
@@ -433,11 +435,11 @@ function StatCard({
       <span className="absolute left-0 top-0 bottom-0 w-1" style={{ background: tone }} />
       <div className="flex w-full items-center gap-3">
         <div
-          className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full text-sm"
+          className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full"
           style={{ background: tone + "22", color: tone }}
           aria-hidden="true"
         >
-          ≡
+          {icon}
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-[20px] font-extrabold leading-tight text-text">{bucket.total}</div>
