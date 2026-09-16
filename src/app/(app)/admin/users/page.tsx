@@ -55,7 +55,7 @@ export default function UserManagementPage() {
       const body = {
         username: form.username,
         fullName: form.fullName,
-        password: form.password || null,
+        password: form.id ? form.password || null : null,
         role: form.role,
         departmentId: form.role === "MANAGER" ? form.departmentId : null,
         active: form.active,
@@ -136,7 +136,7 @@ export default function UserManagementPage() {
                 <th>Role</th>
                 <th>แผนก</th>
                 <th>สถานะ</th>
-                <th>Azure AD</th>
+                <th>สถานะบัญชี</th>
                 <th>เข้าใช้ล่าสุด</th>
                 <th></th>
               </tr>
@@ -155,9 +155,12 @@ export default function UserManagementPage() {
                     <Badge tone={u.active ? "success" : "slate"}>{u.active ? "Active" : "Inactive"}</Badge>
                   </td>
                   <td>
-                    {u.email && !u.lastLoginAt ? (
+                    {u.status === "ACTIVE" && <Badge tone="success">เข้าใช้งานแล้ว</Badge>}
+                    {(u.status === "PENDING" || u.status === "EXPIRED") && (
                       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <Badge tone="warning">รอเข้าใช้งานครั้งแรก</Badge>
+                        <Badge tone={u.status === "EXPIRED" ? "slate" : "warning"}>
+                          {u.status === "EXPIRED" ? "ลิงก์หมดอายุ" : "รอ Activate"}
+                        </Badge>
                         <button
                           className="linkbtn"
                           aria-label={`ส่ง invite ให้ ${u.username} อีกครั้ง`}
@@ -167,10 +170,6 @@ export default function UserManagementPage() {
                           {resendingId === u.id ? "กำลังส่ง…" : "ส่งอีกครั้ง"}
                         </button>
                       </span>
-                    ) : u.email ? (
-                      <Badge tone="success">เข้าใช้งานแล้ว</Badge>
-                    ) : (
-                      <span className="cell-muted">—</span>
                     )}
                   </td>
                   <td className="date-cell cell-muted">{u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "—"}</td>
@@ -229,23 +228,21 @@ export default function UserManagementPage() {
                 <UF id="fullName" label="ชื่อ-นามสกุล" error={errors.fullName}>
                   <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
                 </UF>
-                <UF
-                  id="password"
-                  label={form.id ? "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)" : "รหัสผ่าน (เว้นว่างได้ถ้ากรอกอีเมล)"}
-                  error={errors.password}
-                >
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  />
-                </UF>
-                <UF id="email" label="อีเมล (สำหรับ Sign in with Microsoft — ต้องเป็น @g-able.com)" error={errors.email}>
+                {form.id ? (
+                  <UF id="password" label="รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)" error={errors.password}>
+                    <input
+                      type="password"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    />
+                  </UF>
+                ) : null}
+                <UF id="email" label={form.id ? "อีเมล" : "อีเมล (จะส่งลิงก์ตั้งรหัสผ่านไปที่นี่)"} error={errors.email}>
                   <input
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="name@g-able.com"
+                    placeholder="name@example.com"
                   />
                 </UF>
                 <UF id="role" label="Role" error={errors.role}>

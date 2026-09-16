@@ -113,4 +113,5 @@ export interface AdminUser {
   departmentCode: string | null;
   active: boolean;
   email: string | null;
+  status: "ACTIVE" | "PENDING" | "EXPIRED";
 }
