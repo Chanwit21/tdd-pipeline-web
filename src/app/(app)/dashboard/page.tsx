@@ -1,5 +1,4 @@
 "use client";
-import "./dashboard-tailwind.css";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
