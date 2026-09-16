@@ -8,12 +8,22 @@ import { useMasterConfig, useCreatedYears } from "@/lib/hooks";
 import { formatAmount, formatMonth, formatDate } from "@/lib/format";
 import { stagesForStatuses, withStatusFilter } from "@/lib/validation";
 import { PageHead, FilterBar, Field, Select, Badge, StageBadge, StatusBadge, Pager } from "@/components/ui";
+import { Card } from "@/components/ui/card";
 import { IcoPipeline, IcoPlus, IcoDownload, IcoBell } from "@/components/icons";
 import { DealFormModal } from "@/components/deal/DealFormModal";
+import { DepartmentBreakdownDialog } from "@/components/deal/DepartmentBreakdownDialog";
 import { MultiCheckbox } from "@/components/MultiCheckbox";
 import { downloadCsv } from "@/lib/export";
 import { useToast } from "@/components/Toast";
 import type { Deal, Page } from "@/lib/types";
+
+type DeptModalKey = "total" | "followUp" | "pr" | "inactive";
+const DEPT_MODAL_LABEL: Record<DeptModalKey, string> = {
+  total: "ทั้งหมด", followUp: "Follow Up", pr: "PR / PO", inactive: "Inactive",
+};
+const DEPT_MODAL_TONE: Record<DeptModalKey, string> = {
+  total: "#F2661C", followUp: "#2E6BE6", pr: "#1A9A5B", inactive: "#6B7280",
+};
 
 const DEFAULT_FILTERS = {
   departmentId: [] as string[],
@@ -45,6 +55,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   const toast = useToast();
   const [exporting, setExporting] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
+  const [deptModal, setDeptModal] = useState<DeptModalKey | null>(null);
   const requestId = useRef(0);
   const query = {
     ...filters, departmentId: isAdmin ? filters.departmentId : undefined,
@@ -89,6 +100,22 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
       inactive: c.filter((d) => d.dealStatus === "Inactive").length,
       overdue: c.filter((d) => d.overdue).length,
       legacy: c.filter((d) => d.legacyMigrated).length,
+    };
+  }, [data]);
+
+  const deptBreakdown = useMemo<Record<DeptModalKey, { total: number; counts: Record<string, number> }>>(() => {
+    const c = data?.content ?? [];
+    const bucket = (filter: (d: Deal) => boolean) => {
+      const rows = c.filter(filter);
+      const byDept: Record<string, number> = {};
+      for (const d of rows) byDept[d.departmentCode] = (byDept[d.departmentCode] ?? 0) + 1;
+      return { total: rows.length, counts: byDept };
+    };
+    return {
+      total: bucket(() => true),
+      followUp: bucket((d) => d.dealStatus === "Follow Up"),
+      pr: bucket((d) => d.dealStatus === "PR"),
+      inactive: bucket((d) => d.dealStatus === "Inactive"),
     };
   }, [data]);
 
@@ -152,11 +179,27 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         }
       />
 
-      <div className="stat-row">
-        <StatChip on={filters.dealStatus.length === 0} label="ทั้งหมด" value={counts.all} onClick={() => selectStatus([])} />
-        <StatChip on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Follow Up"} label="Follow Up (หน้านี้)" value={counts.followUp} onClick={() => selectStatus(["Follow Up"])} />
-        <StatChip on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "PR"} label="PR / PO (หน้านี้)" value={counts.pr} onClick={() => selectStatus(["PR"])} />
-        <StatChip on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Inactive"} label="Inactive (หน้านี้)" value={counts.inactive} onClick={() => selectStatus(["Inactive"])} />
+      <div className="flex flex-wrap items-stretch gap-4">
+        <StatCard
+          on={filters.dealStatus.length === 0}
+          label="ทั้งหมด" tone="#F2661C" bucket={deptBreakdown.total}
+          onClick={() => selectStatus([])} onViewAll={() => setDeptModal("total")}
+        />
+        <StatCard
+          on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Follow Up"}
+          label="Follow Up (หน้านี้)" tone="#2E6BE6" bucket={deptBreakdown.followUp}
+          onClick={() => selectStatus(["Follow Up"])} onViewAll={() => setDeptModal("followUp")}
+        />
+        <StatCard
+          on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "PR"}
+          label="PR / PO (หน้านี้)" tone="#1A9A5B" bucket={deptBreakdown.pr}
+          onClick={() => selectStatus(["PR"])} onViewAll={() => setDeptModal("pr")}
+        />
+        <StatCard
+          on={filters.dealStatus.length === 1 && filters.dealStatus[0] === "Inactive"}
+          label="Inactive (หน้านี้)" tone="#6B7280" bucket={deptBreakdown.inactive}
+          onClick={() => selectStatus(["Inactive"])} onViewAll={() => setDeptModal("inactive")}
+        />
         <div className="updates-card">
           <div className="stat-icon" aria-hidden="true"><IcoBell size={18} /></div>
           <div>
@@ -168,6 +211,13 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
           <div className="bar" />
         </div>
       </div>
+      <DepartmentBreakdownDialog
+        open={deptModal !== null}
+        onOpenChange={(o) => !o && setDeptModal(null)}
+        label={deptModal ? DEPT_MODAL_LABEL[deptModal] : ""}
+        tone={deptModal ? DEPT_MODAL_TONE[deptModal] : "#F2661C"}
+        bucket={deptModal ? deptBreakdown[deptModal] : { total: 0, counts: {} }}
+      />
 
       <div className="panel pipeline-panel">
       <FilterBar embedded
@@ -274,7 +324,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
               {data?.content.map((d, i) => (
                 <tr
                   key={d.id}
-                  className={`clickable${d.rowColor !== "normal" ? ` row-${d.rowColor}` : ""}`}
+                  className={`clickable${d.rowColor !== "normal" ? ` row-${d.rowColor}` : ""}${d.legacyMigrated ? " bg-[#FFF8F0] shadow-[inset_3px_0_0_#F2661C]" : ""}`}
                   onClick={() => setTarget(d.id)}
                 >
                   <td onClick={e => e.stopPropagation()}><input type="checkbox" aria-label={`เลือก ${d.recordId}`} checked={selected.includes(d.id)} onChange={e => setSelected(e.target.checked ? [...selected, d.id] : selected.filter(id => id !== d.id))} /></td>
@@ -356,14 +406,67 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
   );
 }
 
-function StatChip({ label, value, on, onClick }: { label: string; value: number; on?: boolean; onClick?: () => void }) {
+function StatCard({
+  label,
+  tone,
+  bucket,
+  on,
+  onClick,
+  onViewAll,
+}: {
+  label: string;
+  tone: string;
+  bucket: { total: number; counts: Record<string, number> };
+  on?: boolean;
+  onClick?: () => void;
+  onViewAll: () => void;
+}) {
+  const top5 = Object.entries(bucket.counts)
+    .map(([code, count]) => ({ code, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
   return (
-    <button type="button" className={`stat-chip${on ? " on" : ""}`} aria-pressed={!!on} onClick={onClick}>
-      <div className="stat-icon" aria-hidden="true">≡</div>
-      <div>
-        <div className="lbl">{label}</div>
-        <div className="val num">{value}</div>
+    <Card
+      className={`relative flex flex-1 min-w-[190px] cursor-pointer flex-col gap-3.5 overflow-hidden p-[18px_20px]${on ? " ring-2 ring-accent" : ""}`}
+      onClick={onClick}
+    >
+      <span className="absolute left-0 top-0 bottom-0 w-1" style={{ background: tone }} />
+      <div className="flex w-full items-center gap-3">
+        <div
+          className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full text-sm"
+          style={{ background: tone + "22", color: tone }}
+          aria-hidden="true"
+        >
+          ≡
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[20px] font-extrabold leading-tight text-text">{bucket.total}</div>
+          <div className="whitespace-nowrap text-xs text-text-muted">{label}</div>
+        </div>
+        <button
+          type="button"
+          className="flex-none text-[11px] font-semibold text-text-muted underline hover:text-accent"
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewAll();
+          }}
+        >
+          ดูทั้งหมด
+        </button>
       </div>
-    </button>
+      {bucket.total > 0 && (
+        <div className="flex flex-col gap-2.5 border-t border-border pt-3">
+          {top5.map((r) => (
+            <div key={r.code} className="flex items-center gap-2">
+              <span className="w-9 text-[11px] font-semibold text-text">{r.code}</span>
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#EDEEF2]">
+                <div className="h-full rounded-full" style={{ width: `${Math.round((r.count / bucket.total) * 100)}%`, background: tone }} />
+              </div>
+              <span className="text-[11px] font-semibold text-text-muted">{r.count}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }
