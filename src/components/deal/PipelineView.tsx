@@ -447,7 +447,7 @@ function StatCard({
         </div>
         <button
           type="button"
-          className="flex-none text-[11px] font-semibold text-text-muted underline hover:text-accent"
+          className="flex-none appearance-none border-0 bg-transparent p-0 text-[11px] font-semibold text-text-muted underline decoration-1 underline-offset-2 hover:text-accent cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             onViewAll();
