@@ -4,13 +4,14 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "./ui/chart";
 
 const config: ChartConfig = {
-  dealCount: { label: "จำนวนดีล", color: "hsl(var(--chart-1))" },
+  dealCount: { label: "จำนวนดีล", color: "#ff7a1f" },
 };
 
 export function DepartmentBarChart({ data }: { data: { department: string; dealCount: number }[] }) {
   if (!data.length) return <span className="text-sm text-[#6c7486]">ไม่พบข้อมูล</span>;
+  const ariaLabel = `กราฟจำนวน Deal ที่ Active แยกตามแผนก: ${data.map((r) => `${r.department} ${r.dealCount} ดีล`).join(", ")}`;
   return (
-    <ChartContainer config={config} className="h-[220px]">
+    <ChartContainer config={config} className="h-[220px]" ariaLabel={ariaLabel}>
       <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
         <CartesianGrid horizontal={false} stroke="#eef0f5" />
         <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#6c7486" }} />

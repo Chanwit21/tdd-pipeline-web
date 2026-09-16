@@ -14,10 +14,12 @@ const ChartContext = React.createContext<{ config: ChartConfig } | null>(null);
 export function ChartContainer({
   config,
   className,
+  ariaLabel,
   children,
 }: {
   config: ChartConfig;
   className?: string;
+  ariaLabel: string;
   children: React.ReactElement;
 }) {
   const style = Object.fromEntries(
@@ -26,7 +28,12 @@ export function ChartContainer({
 
   return (
     <ChartContext.Provider value={{ config }}>
-      <div className={cn("dashboard-shadcn-scope w-full", className)} style={style}>
+      <div
+        role="img"
+        aria-label={ariaLabel}
+        className={cn("dashboard-shadcn-scope w-full", className)}
+        style={style}
+      >
         <ResponsiveContainer width="100%" height="100%">
           {children}
         </ResponsiveContainer>

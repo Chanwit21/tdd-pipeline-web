@@ -5,15 +5,3 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* shadcn chart color tokens, scoped under this class so they never collide
-   with --info/--success/--accent etc. already used by globals.css/ui.tsx. */
-.dashboard-shadcn-scope {
-  --chart-1: 24 100% 56%; /* brand accent orange #ff7a1f */
-  --chart-2: 217 74% 45%; /* brand info blue */
-  --chart-3: 152 68% 30%; /* brand success green */
-  --chart-4: 32 100% 65%;
-  --chart-5: 210 20% 55%;
-  --dash-border: 220 24% 90%;
-  --dash-card: 0 0% 100%;
-}
