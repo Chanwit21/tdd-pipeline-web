@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 import { invalidateMasterConfig } from "@/lib/hooks";
-import { PageHead, Subtabs, Badge, Modal } from "@/components/ui";
+import { PageHead, Subtabs, Badge } from "@/components/ui";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import type { MasterConfig, AdminUser } from "@/lib/types";
 type Sub = "dept" | "stage" | "prob" | "type";
 type Kind = "departments" | "stages" | "types" | "statuses";
@@ -85,8 +86,9 @@ export default function MasterConfigPage() {
         </div>}
       </div>
     </div>
-    <Modal open={!!form} onClose={()=>{if(!busy)setForm(null);}} width={560}>
-      {form && <><div className="modal-head"><h3>{form.id?"แก้ไข":"เพิ่ม"} {title[form.kind]}</h3><button className="icon-x" aria-label="ปิด" disabled={busy} onClick={()=>setForm(null)}>×</button></div><div className="mpanel">
+    <Dialog open={!!form} onOpenChange={(o)=>{if(!o && !busy)setForm(null);}}>
+      <DialogContent className="max-w-[560px]">
+      {form && <><div className="modal-head"><DialogTitle asChild><h3>{form.id?"แก้ไข":"เพิ่ม"} {title[form.kind]}</h3></DialogTitle><button className="icon-x" aria-label="ปิด" disabled={busy} onClick={()=>setForm(null)}>×</button></div><div className="mpanel">
         {error && <div className="warn-banner" role="alert">{error}</div>}
         <div className="form-grid" style={{gridTemplateColumns:"1fr"}}>
           {form.kind==="departments" && <div className="form-field"><label>รหัสแผนก <span className="req">*</span></label><input maxLength={20} value={form.code} onChange={e=>setForm({...form,code:e.target.value})} /></div>}
@@ -95,9 +97,12 @@ export default function MasterConfigPage() {
           {form.kind==="stages" && <fieldset><legend>Deal Status ที่อนุญาต <span className="req">*</span></legend>{config.dealStatuses.map(s=><label key={s} style={{display:"flex",gap:8,padding:6}}><input type="checkbox" checked={form.allowedFor.includes(s)} onChange={e=>setForm({...form,allowedFor:e.target.checked?[...form.allowedFor,s]:form.allowedFor.filter(v=>v!==s)})} />{s}</label>)}</fieldset>}
         </div>
       </div><div className="modal-foot"><button className="btn" disabled={busy} onClick={()=>setForm(null)}>ยกเลิก</button><button className="btn btn-primary" disabled={busy || !form.name.trim() || (form.kind==="departments"&&!form.code.trim()) || (form.kind==="stages"&&!form.allowedFor.length)} onClick={save}>{busy?"กำลังบันทึก…":"บันทึก"}</button></div></>}
-    </Modal>
-    <Modal open={!!pendingDelete} onClose={()=>{if(!busy)setPendingDelete(null);}} width={480}>
-      <div className="modal-head"><h3>ยืนยันลบ {pendingDelete?.name}</h3></div><div className="mpanel">ลบได้เฉพาะรายการที่ไม่มีข้อมูลอ้างอิง{error&&<div className="warn-banner" role="alert">{error}</div>}</div><div className="modal-foot"><button className="btn" disabled={busy} onClick={()=>setPendingDelete(null)}>ยกเลิก</button><button className="btn btn-primary" disabled={busy} onClick={remove}>ยืนยันลบ</button></div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={!!pendingDelete} onOpenChange={(o)=>{if(!o && !busy)setPendingDelete(null);}}>
+      <DialogContent className="max-w-[480px]">
+      <div className="modal-head"><DialogTitle asChild><h3>ยืนยันลบ {pendingDelete?.name}</h3></DialogTitle></div><div className="mpanel">ลบได้เฉพาะรายการที่ไม่มีข้อมูลอ้างอิง{error&&<div className="warn-banner" role="alert">{error}</div>}</div><div className="modal-foot"><button className="btn" disabled={busy} onClick={()=>setPendingDelete(null)}>ยกเลิก</button><button className="btn btn-primary" disabled={busy} onClick={remove}>ยืนยันลบ</button></div>
+      </DialogContent>
+    </Dialog>
   </div>;
 }
