@@ -10,6 +10,7 @@ interface AuthState {
   user: CurrentUser | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  activate: (token: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -37,6 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/dashboard");
   };
 
+  const activate = async (token: string, password: string) => {
+    const res = await api<{ token: string; user: CurrentUser }>("/api/auth/activate", {
+      method: "POST",
+      body: { token, password },
+    });
+    setToken(res.token);
+    setUser(res.user);
+    router.push("/dashboard");
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -46,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, activate, logout }}>{children}</AuthContext.Provider>
   );
 }
 
