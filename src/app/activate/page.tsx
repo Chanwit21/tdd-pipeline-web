@@ -70,7 +70,7 @@ function ActivateForm() {
 export default function ActivatePage() {
   return (
     <div className="login-screen">
-      <div className="login-panel" style={{ width: "100%" }}>
+      <div className="login-panel" style={{ width: "100%", gridColumn: "1 / -1" }}>
         <div className="login-card">
           <h1>ตั้งรหัสผ่านบัญชีของคุณ</h1>
           <p className="lede">กรอกรหัสผ่านใหม่เพื่อเปิดใช้งานบัญชี TDD Pipeline ของคุณ</p>
