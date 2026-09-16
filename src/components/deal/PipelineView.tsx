@@ -179,7 +179,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
         }
       />
 
-      <div className="flex flex-wrap items-stretch gap-4">
+      <div className="stat-row">
         <StatCard
           on={filters.dealStatus.length === 0}
           label="ทั้งหมด" tone="#F2661C" bucket={deptBreakdown.total} icon={<IcoPipeline size={16} />}
@@ -429,7 +429,7 @@ function StatCard({
     .slice(0, 5);
   return (
     <Card
-      className={`relative flex flex-1 min-w-[190px] cursor-pointer flex-col gap-3.5 overflow-hidden p-[18px_20px]${on ? " ring-2 ring-accent" : ""}`}
+      className={`relative flex cursor-pointer flex-col gap-3.5 overflow-hidden p-[18px_20px]${on ? " ring-2 ring-accent" : ""}`}
       onClick={onClick}
     >
       <span className="absolute left-0 top-0 bottom-0 w-1" style={{ background: tone }} />
