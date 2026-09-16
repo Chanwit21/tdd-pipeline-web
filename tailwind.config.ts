@@ -1,9 +1,13 @@
 import type { Config } from "tailwindcss";
 
 // App-wide as of ADR-0009 (supersedes the ADR-0008 Dashboard-only scope).
-// preflight stays off until every page has migrated off globals.css's old
-// component classes (see SHADCN-DESIGN-SYSTEM-PLAN.md Task 11) — those
-// classes rely on the browser's unreset defaults that preflight would strip.
+// preflight stays off PERMANENTLY, not just transitionally: only Dashboard
+// and part of Sales Pipeline were rebuilt with real Tailwind utility
+// classes. Reports, Master Data, User Management, Login, and DealFormModal
+// still render through globals.css's hand-written classes (buttons, tables,
+// lists, modals) that assume the browser's un-reset defaults — turning
+// preflight on would strip those out from under them. Revisit only if a
+// future initiative actually rewrites those pages onto Tailwind utilities.
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   corePlugins: {
