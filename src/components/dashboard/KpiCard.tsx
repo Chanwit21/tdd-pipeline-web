@@ -1,10 +1,10 @@
 import { Card, CardHeader, CardTitle } from "./ui/Card";
 
 const GRADIENTS: Record<string, string> = {
-  accent: "linear-gradient(135deg,#ff7a1f,#ff9c4d)",
-  success: "linear-gradient(135deg,#178a4c,#3fb877)",
-  info: "linear-gradient(135deg,#2058c9,#5b8cf0)",
-  danger: "linear-gradient(135deg,#c8321f,#e2624f)",
+  accent: "linear-gradient(135deg,#F2661C,#f2884d)",
+  success: "linear-gradient(135deg,#1A9A5B,#4dbf85)",
+  info: "linear-gradient(135deg,#2E6BE6,#6f96f0)",
+  danger: "linear-gradient(135deg,#E5484D,#ec7679)",
 };
 
 export function KpiCard({

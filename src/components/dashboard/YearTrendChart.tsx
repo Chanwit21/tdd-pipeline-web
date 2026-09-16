@@ -8,8 +8,8 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 // card) so it reads clearly against the orange dealCount bars — same
 // overall brand palette, just paired for contrast instead of orange-on-orange.
 const config: ChartConfig = {
-  dealCount: { label: "จำนวนดีล", color: "#ffcfa0" },
-  amount: { label: "Amount", color: "#2058c9" },
+  dealCount: { label: "จำนวนดีล", color: "#f7c9a3" },
+  amount: { label: "Amount", color: "#2E6BE6" },
 };
 
 export function YearTrendChart({ data }: { data: { year: number; dealCount: number; amount: number }[] }) {

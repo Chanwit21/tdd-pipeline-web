@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "./ui/chart";
 
 const config: ChartConfig = {
-  dealCount: { label: "จำนวนดีล", color: "#ff7a1f" },
+  dealCount: { label: "จำนวนดีล", color: "#F2661C" },
 };
 
 export function DepartmentBarChart({ data }: { data: { department: string; dealCount: number }[] }) {
@@ -28,8 +28,8 @@ export function DepartmentBarChart({ data }: { data: { department: string; dealC
         <defs>
           {/* Same gradient as the KPI accent icon chip, for visual consistency */}
           <linearGradient id="dept-gradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#ff7a1f" />
-            <stop offset="100%" stopColor="#ff9c4d" />
+            <stop offset="0%" stopColor="#F2661C" />
+            <stop offset="100%" stopColor="#f2884d" />
           </linearGradient>
         </defs>
       </BarChart>
