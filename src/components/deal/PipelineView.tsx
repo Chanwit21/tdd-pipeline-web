@@ -201,6 +201,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
           onClick={() => selectStatus(["Inactive"])} onViewAll={() => setDeptModal("inactive")}
         />
         <div className="updates-card">
+          <div className="bar" />
           <div className="stat-icon" aria-hidden="true"><IcoBell size={18} /></div>
           <div>
             <b>แจ้งเตือน (หน้านี้)</b>
@@ -208,7 +209,6 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
               {counts.overdue} ดีล overdue ต้องติดตาม · {counts.legacy} ดีล migrate จาก Excel รอตรวจสอบ
             </div>
           </div>
-          <div className="bar" />
         </div>
       </div>
       <DepartmentBreakdownDialog
