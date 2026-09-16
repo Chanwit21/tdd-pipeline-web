@@ -205,7 +205,7 @@ export function PipelineView({ initialTarget }: { initialTarget?: number | "new"
           <div className="stat-icon" aria-hidden="true"><IcoBell size={18} /></div>
           <div>
             <b>แจ้งเตือน (หน้านี้)</b>
-            <div style={{ color: "var(--text-muted)", fontSize: 11.5, marginTop: 2 }}>
+            <div style={{ color: "var(--text-muted)", fontSize: 11.5, lineHeight: 1.7, marginTop: 2 }}>
               {counts.overdue} ดีล overdue ต้องติดตาม · {counts.legacy} ดีล migrate จาก Excel รอตรวจสอบ
             </div>
           </div>
