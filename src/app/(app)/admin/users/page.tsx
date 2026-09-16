@@ -13,7 +13,7 @@ interface FormState {
   username: string;
   fullName: string;
   password: string;
-  role: "MANAGER" | "ADMIN";
+  role: "MANAGER" | "ADMIN" | "VIEWER";
   departmentId: number | null;
   active: boolean;
   email: string;
@@ -24,7 +24,7 @@ const EMPTY: FormState = {
   username: "",
   fullName: "",
   password: "",
-  role: "MANAGER",
+  role: "VIEWER",
   departmentId: null,
   active: true,
   email: "",
@@ -148,7 +148,7 @@ export default function UserManagementPage() {
                   <td className="cell-strong">{u.username}</td>
                   <td>{u.fullName}</td>
                   <td>
-                    <Badge tone={u.role === "ADMIN" ? "accent" : "info"}>{u.role}</Badge>
+                    <Badge tone={u.role === "ADMIN" ? "accent" : u.role === "VIEWER" ? "slate" : "info"}>{u.role}</Badge>
                   </td>
                   <td>{u.departmentCode ? <Badge tone="slate">{u.departmentCode}</Badge> : <span className="cell-muted">ทุกแผนก</span>}</td>
                   <td>
@@ -253,6 +253,7 @@ export default function UserManagementPage() {
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value as FormState["role"] })}
                   >
+                    <option value="VIEWER">VIEWER</option>
                     <option value="MANAGER">MANAGER</option>
                     <option value="ADMIN">ADMIN</option>
                   </select>
